@@ -1,5 +1,3 @@
-import UIKit
-
 struct RunStackingUseCase {
     private let processor: any StackingProcessor
 
@@ -7,7 +5,7 @@ struct RunStackingUseCase {
         self.processor = processor
     }
 
-    func execute(images: [UIImage], mode: StackingMode = .mean) async throws -> StackingResult {
-        try await processor.process(StackingRequest(images: images, mode: mode))
+    func execute(project: StackingProject) async throws -> StackingResult {
+        try await processor.stack(project)
     }
 }

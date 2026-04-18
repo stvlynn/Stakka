@@ -95,7 +95,7 @@ Light pollution uses the Bortle scale (9 levels):
 | 8     | City sky                  | 城市天空          | Red             |
 | 9     | Inner-city sky            | 市中心            | Deep red        |
 
-Current implementation shows mock data (Level 1). The pollution level indicator circle in the card header changes color based on level.
+Current implementation still uses mock data, but the location flow is now wired. The pollution level indicator circle in the card header changes color based on level.
 
 ## Transition Animation
 
@@ -111,16 +111,23 @@ Wrapped in `withAnimation(AnimationPreset.spring)` on location selection.
 
 - Title: "光污染地图"
 - `.ultraThinMaterial` navigation bar
-- Location button (⊙) in top trailing — currently placeholder
+- Location button in top trailing recenters on the user's location and refreshes the reading
 
 ## Current State
 
-The module uses mock data. Real implementation needs:
+The module now supports:
 
-1. Light pollution data source (API or offline dataset)
-2. Location permission flow
-3. Reverse geocoding for place names
-4. Bortle scale classification from pollution values
+1. requesting the current device location
+2. centering the map on that location
+3. fetching a mock pollution reading for the selected coordinate
+4. rendering the info card from the current reading
+
+Still missing:
+
+1. real light-pollution data source
+2. place-name resolution / reverse geocoding
+3. caching and persistence
+4. richer map overlays
 
 ## Data Integration Path
 
@@ -138,16 +145,7 @@ Reference: [Light Pollution Map repository](https://github.com/cgettings/Light-P
 
 ## Toolbar
 
-```swift
-ToolbarItem(placement: .primaryAction) {
-    Button {
-        // TODO: Center on user location
-    } label: {
-        Image(systemName: "location.fill")
-            .foregroundStyle(Color.cosmicBlue)
-    }
-}
-```
+The toolbar button triggers `loadCurrentLocation()` in `DarkSkyViewModel`, then updates the displayed `MapCameraPosition` around the selected coordinate.
 
 ## Future Work
 

@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- macOS 14.0+
-- Xcode 15.0+
+- macOS 14+
+- Xcode 15+
 - Swift 5.9+
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 
@@ -14,223 +14,144 @@ brew install xcodegen
 ## First-Time Setup
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/stvlynn/Stakka.git
 cd Stakka
-
-# 2. Generate the Xcode project
 xcodegen generate
-
-# 3. Open in Xcode
 open Stakka.xcodeproj
 ```
 
-The `.xcodeproj` is not committed. Always regenerate it after pulling changes that modify `project.yml`.
+The `.xcodeproj` is generated. Regenerate it whenever `project.yml` or source layout changes.
 
-## Daily Workflow
+## Daily Commands
 
-### After pulling changes
+### Regenerate Project
 
 ```bash
 xcodegen generate
 ```
-
-If project.yml hasn't changed, regenerating is fast and idempotent.
 
 ### Build
 
 ```bash
-# Build for simulator
 xcodebuild \
   -project Stakka.xcodeproj \
   -scheme Stakka \
   -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
   build
-
-# Or simply ⌘B in Xcode
 ```
 
-### Run
+If that simulator is not installed, use any available iPhone simulator or a concrete simulator identifier.
 
-Use Xcode (⌘R). Select an iPhone 15 Pro simulator for the most accurate layout preview.
-
-### Test Camera Features
-
-The camera requires a physical device:
-
-1. Connect iPhone (iOS 17.0+)
-2. Select your device in Xcode's device selector
-3. Run (⌘R)
-4. Trust developer certificate on device if prompted
-
-Simulator supports AVFoundation APIs but shows a static test pattern instead of live camera.
-
-## Project Structure Navigation
-
-See [ARCHITECTURE.md](../overview/ARCHITECTURE.md) for full structure. Key entry points:
-
-| Task | Start Here |
-|------|-----------|
-| Add new camera control | `Features/Camera/Components/` |
-| Modify stacking algorithm | `Core/ImageStacking/ImageStacker.swift` |
-| Change design tokens | `Core/Utilities/DesignSystem.swift` |
-| Add new feature tab | `App/ContentView.swift` + new `Features/` directory |
-
-## Adding New Files
-
-XcodeGen manages project membership. To add a new Swift file:
-
-1. Create the file in the correct directory
-2. Run `xcodegen generate`
-3. The file is automatically added to the project
-
-No need to manually add files in Xcode. Files in `Stakka/` are picked up automatically.
-
-### project.yml Reference
-
-```yaml
-# All .swift files under Sources are included automatically
-targets:
-  Stakka:
-    sources:
-      - Stakka
-```
-
-If a file isn't showing up in Xcode, check:
-1. Is the file in a directory under `Stakka/`?
-2. Has `xcodegen generate` been run?
-3. Does the file extension match (`.swift`)?
-
-## Quality Gates
-
-### Build Check
-
-Must pass before any PR:
+### Run Tests
 
 ```bash
 xcodebuild \
   -project Stakka.xcodeproj \
-  -scheme Stakka \
+  -scheme StakkaTests \
   -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
-  build 2>&1 | tail -20
+  test
 ```
 
-No warnings promoted to errors in current configuration, but zero warnings is the goal.
+### Open in Xcode
 
-### Manual UI Testing Checklist
+```bash
+open Stakka.xcodeproj
+```
 
-Before submitting a camera-related PR:
+## Project Navigation
 
-- [ ] Exposure wheel picker opens and closes cleanly
-- [ ] Shot count wheel picker opens and closes cleanly
-- [ ] Advanced menu expands on upward drag (50pt threshold)
-- [ ] Advanced menu collapses on downward drag
-- [ ] Each advanced control button opens correct picker
-- [ ] Capture button starts sequence
-- [ ] Progress updates during capture
-- [ ] Stop button cancels capture
+Current high-value entry points:
 
-Before submitting a library stacking PR:
+| Task | Start Here |
+|---|---|
+| App wiring | `App/Composition/AppContainer.swift` |
+| Root tabs | `App/Root/ContentView.swift` |
+| Library project workflow | `Domains/Library/Presentation/LibraryStackingView.swift` |
+| Stacking project state | `Domains/Library/Presentation/LibraryStackingViewModel.swift` |
+| Stacking core | `Domains/Stacking/Infrastructure/CoreImage/ImageStacker.swift` |
+| Project persistence | `Domains/Stacking/Infrastructure/Storage/LocalStackProjectRepository.swift` |
+| Camera capture | `Domains/Capture/Presentation/CameraViewModel.swift` |
+| Light-pollution map | `Domains/DarkSky/Presentation/DarkSkyMapView.swift` |
+| Design tokens | `Platform/DesignSystem/DesignSystem.swift` |
 
-- [ ] PhotosPicker opens and allows multi-selection
-- [ ] Thumbnails render in grid
-- [ ] Stack button triggers processing
-- [ ] Progress spinner shows during stacking
-- [ ] Result image renders with gradient border
-- [ ] Save saves to photo library
+## Adding Files
+
+1. Create the file under `Stakka/` or `StakkaTests/`
+2. Run `xcodegen generate`
+3. Rebuild
+
+XcodeGen picks up files by directory inclusion. Missing files in Xcode usually mean the project was not regenerated.
+
+## Quality Gates
+
+Before merging behavior changes:
+
+- App builds
+- Tests pass
+- Module docs are updated
+- Architecture or workflow docs are updated if the change affects system shape
+
+### Manual Smoke Checklist
+
+#### Library / Stacking
+
+- Create a new project
+- Open an existing project from the browser
+- Duplicate and delete a project
+- Import frames from Photos
+- Import frames from Files
+- Analyze, register, and stack a project
+- Export TIFF
+- Save result to Photos
+
+#### Comet Mode
+
+- Enable each comet mode
+- Run registration so comet estimation appears
+- Open the comet review flow
+- Adjust a comet point manually
+- Verify stack is blocked when review is incomplete
+
+#### Camera
+
+- Camera session starts
+- Exposure and shot-count pickers open and close correctly
+- Capture sequence runs
+- Captured sequence overwrites the recent stacking project
+
+#### Light Pollution
+
+- App can center on current location
+- Marker and info card update
+- Mock reading renders correctly
 
 ## Common Issues
 
-### `xcodegen` command not found
+### `xcodegen` not found
 
 ```bash
 brew install xcodegen
 ```
 
-### Build fails after pull
+### New files do not appear in Xcode
 
 ```bash
 xcodegen generate
 ```
 
-Then clean build folder in Xcode (⇧⌘K) and rebuild.
+### Simulator destination not found
 
-### Simulator camera shows black
+List available devices in Xcode or use a concrete simulator ID in `xcodebuild`.
 
-This is normal. AVFoundation returns a test pattern on simulator. Use physical device for camera testing.
+### Camera behavior differs on simulator
 
-### "Cannot find X in scope" errors
+This is expected. AVFoundation camera behavior must be validated on a physical device.
 
-This usually means a new file hasn't been added to the project. Run:
+## Documentation Expectations
 
-```bash
-xcodegen generate
-```
+When behavior changes:
 
-### Permissions denied on device
-
-Ensure `project.yml` has the correct entitlements. Check:
-- `NSCameraUsageDescription` in Info.plist
-- `NSPhotoLibraryUsageDescription`
-- `NSLocationWhenInUseUsageDescription`
-
-## Branching
-
-```bash
-# Feature branches
-git checkout -b feature/your-feature-name
-
-# Bug fix
-git checkout -b fix/description-of-bug
-```
-
-PR against `main`. Keep PRs focused — one feature per PR.
-
-## Commit Style
-
-```
-feat: add median stacking mode to ImageStacker
-fix: wheel picker doesn't dismiss on iPad
-docs: update camera module docs with new controls
-style: apply breathingGlow to capture progress
-```
-
-Prefix: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
-
-## Dependency Management
-
-No external dependencies currently. If adding a package:
-
-1. Add to `project.yml`:
-```yaml
-packages:
-  PackageName:
-    url: https://github.com/org/repo
-    version: 1.0.0
-```
-
-2. Reference in target:
-```yaml
-targets:
-  Stakka:
-    dependencies:
-      - package: PackageName
-```
-
-3. Run `xcodegen generate`
-
-Prefer Apple system frameworks. Each added dependency requires PR discussion.
-
-## Release Process
-
-1. Update version in `project.yml`
-2. Run `xcodegen generate`
-3. Archive in Xcode (Product → Archive)
-4. Upload to App Store Connect via Xcode Organizer
-
-## Getting Help
-
-- Architecture questions: `docs/overview/ARCHITECTURE.md`
-- Module specifics: `docs/modules/{module}.md`
-- AI agent guidelines: `AGENTS.md`
-- Open an issue on GitHub for bugs and feature requests
+- Update the relevant file in `docs/modules/`
+- Update `docs/overview/ARCHITECTURE.md` if architecture or system shape changed
+- Update `docs/roadmap.md` if priorities or sequence changed
+- Update `README.md` if public-facing project capabilities changed

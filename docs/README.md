@@ -1,49 +1,61 @@
 # Stakka Documentation
 
-Welcome to the Stakka documentation. This guide helps developers understand the architecture, contribute effectively, and maintain code quality.
+This documentation is written for maintainers working on the current codebase.
 
-## Documentation Structure
+## Structure
 
-### [Overview](./overview/)
-High-level architecture and design principles.
+### Overview
 
-- **[ARCHITECTURE.md](./overview/ARCHITECTURE.md)** — System architecture, design philosophy, and project structure
+- [overview/ARCHITECTURE.md](./overview/ARCHITECTURE.md) — system layout, domain boundaries, and key runtime flows
 
-### [Modules](./modules/)
-Detailed documentation for each feature module.
+### Modules
 
-- **[camera.md](./modules/camera.md)** — Camera capture system with advanced controls
-- **[library-stacking.md](./modules/library-stacking.md)** — Photo library stacking workflow
-- **[light-pollution.md](./modules/light-pollution.md)** — Light pollution map integration
-- **[image-stacking.md](./modules/image-stacking.md)** — Image stacking algorithms
-- **[design-system.md](./modules/design-system.md)** — Design tokens and UI patterns
+- [modules/library-stacking.md](./modules/library-stacking.md) — project-based stacking workflow
+- [modules/image-stacking.md](./modules/image-stacking.md) — analysis, registration, calibration, stacking, comet modes
+- [modules/camera.md](./modules/camera.md) — capture UI and capture-to-project handoff
+- [modules/light-pollution.md](./modules/light-pollution.md) — map module, mock data, real-data gaps
+- [modules/design-system.md](./modules/design-system.md) — tokens, motion, visual rules
 
-### [Development](./development/)
-Development workflow and contribution guidelines.
+### Guides
 
-- **[WORKFLOW.md](./development/WORKFLOW.md)** — Local setup, build process, and testing
+- [guides/project-catalog.md](./guides/project-catalog.md) — local project storage, recent project, duplication, deletion
+- [guides/library-workflow.md](./guides/library-workflow.md) — how library projects move from import to export
+- [guides/comet-mode.md](./guides/comet-mode.md) — comet modes, annotation flow, implementation details
+- [guides/capture-handoff.md](./guides/capture-handoff.md) — how camera capture writes into stacking projects
 
-## Quick Links
+### Development
 
-- **New contributors**: Start with [ARCHITECTURE.md](./overview/ARCHITECTURE.md) → [WORKFLOW.md](./development/WORKFLOW.md)
-- **Adding features**: Read relevant module doc → Update architecture if needed
-- **UI changes**: Review [design-system.md](./modules/design-system.md) first
-- **AI agents**: See [AGENTS.md](../AGENTS.md) for coding guidelines
+- [development/WORKFLOW.md](./development/WORKFLOW.md) — setup, build, test, file-adding workflow
 
-## Documentation Principles
+### Planning
 
-1. **Honest about current state** — Document what exists, not aspirations
-2. **Code examples over prose** — Show patterns, don't just describe them
-3. **Update with code changes** — Stale docs are worse than no docs
-4. **Assume intelligent readers** — Explain "why", not "what"
+- [roadmap.md](./roadmap.md) — current baseline, near-term priorities, long-term product direction
 
-## Contributing to Docs
+## Suggested Reading Order
 
-When making code changes:
+For a new maintainer:
 
-- Update relevant module doc if behavior changes
-- Add new module doc for new features
-- Keep ARCHITECTURE.md in sync with structural changes
-- Update AGENTS.md if introducing new patterns
+1. [overview/ARCHITECTURE.md](./overview/ARCHITECTURE.md)
+2. [development/WORKFLOW.md](./development/WORKFLOW.md)
+3. [modules/library-stacking.md](./modules/library-stacking.md)
+4. [modules/image-stacking.md](./modules/image-stacking.md)
+5. [guides/project-catalog.md](./guides/project-catalog.md)
+6. [guides/comet-mode.md](./guides/comet-mode.md)
 
-Documentation follows the same quality standards as code — clear, concise, and maintainable.
+For camera work:
+
+1. [modules/camera.md](./modules/camera.md)
+2. [guides/capture-handoff.md](./guides/capture-handoff.md)
+
+For product-side map work:
+
+1. [modules/light-pollution.md](./modules/light-pollution.md)
+2. [roadmap.md](./roadmap.md)
+
+## Documentation Rules
+
+- Document what exists in the current codebase
+- Separate implemented behavior from roadmap items
+- Prefer concrete workflow descriptions over aspirational summaries
+- Update the relevant module doc when changing behavior
+- Update the roadmap when changing sequence or priorities

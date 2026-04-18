@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct StackedResultCard: View {
-    let image: UIImage
+    let result: StackingResult
     let onSave: () -> Void
+    let onExportTIFF: () -> Void
 
     var body: some View {
         VStack(spacing: Spacing.md) {
@@ -16,9 +17,17 @@ struct StackedResultCard: View {
                     .foregroundStyle(Color.starWhite)
 
                 Spacer()
+
+                Text(result.mode.title)
+                    .font(.stakkaSmall)
+                    .foregroundStyle(Color.cosmicBlue)
+                    .padding(.horizontal, Spacing.sm)
+                    .padding(.vertical, 6)
+                    .background(Color.cosmicBlue.opacity(0.12))
+                    .continuousCorners(CornerRadius.md)
             }
 
-            Image(uiImage: image)
+            Image(uiImage: result.image)
                 .resizable()
                 .scaledToFit()
                 .continuousCorners(CornerRadius.lg)
@@ -35,20 +44,60 @@ struct StackedResultCard: View {
                 )
                 .shadow(color: .cosmicBlue.opacity(0.3), radius: 20)
 
-            Button(action: onSave) {
-                HStack {
-                    Image(systemName: "square.and.arrow.down.fill")
-                    Text("保存")
+            HStack(spacing: Spacing.sm) {
+                metricBadge(symbol: "photo", value: "\(result.frameCount)")
+                metricBadge(symbol: "scope", value: result.recap.referenceFrameName)
+                metricBadge(symbol: "moon.fill", value: "\(result.recap.darkFrameCount)")
+                metricBadge(symbol: "circle.lefthalf.filled", value: "\(result.recap.flatFrameCount)")
+                if let cometMode = result.recap.cometMode {
+                    metricBadge(symbol: cometMode.symbolName, value: cometMode.title)
                 }
-                .font(.stakkaCaption)
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.cosmicBlue)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: Spacing.sm) {
+                Button(action: onSave) {
+                    HStack {
+                        Image(systemName: "square.and.arrow.down.fill")
+                        Text("保存")
+                    }
+                    .font(.stakkaCaption)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.md)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.cosmicBlue)
+
+                Button(action: onExportTIFF) {
+                    HStack {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("TIFF")
+                    }
+                    .font(.stakkaCaption)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.md)
+                }
+                .buttonStyle(.bordered)
+                .tint(.starWhite)
+            }
         }
         .padding(Spacing.md)
         .glassCard()
+    }
+
+    private func metricBadge(symbol: String, value: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol)
+            Text(value)
+                .monospacedDigit()
+        }
+        .font(.stakkaSmall)
+        .foregroundStyle(Color.textSecondary)
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, 6)
+        .background(Color.spaceSurface.opacity(0.55))
+        .continuousCorners(CornerRadius.md)
     }
 }

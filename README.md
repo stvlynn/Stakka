@@ -1,238 +1,155 @@
-# Stakka
+<p align="center">
+  <img src="./icon.png" alt="Stakka app icon" width="128" height="128">
+</p>
 
-iOS astrophotography app combining light pollution maps and image stacking for stargazing enthusiasts.
+<h1 align="center">Stakka</h1>
 
-[![iOS](https://img.shields.io/badge/iOS-17.0+-blue.svg)](https://developer.apple.com/ios/)
-[![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<p align="center">
+  iOS astrophotography for dark-sky discovery, capture sequencing, and frame stacking.
+</p>
 
-## Features
+<p align="center">
+  <a href="https://developer.apple.com/ios/"><img alt="iOS" src="https://img.shields.io/badge/iOS-17.0+-blue.svg"></a>
+  <a href="https://swift.org"><img alt="Swift" src="https://img.shields.io/badge/Swift-5.9+-orange.svg"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+</p>
 
-### 🗺️ Light Pollution Map
-Query light pollution levels based on location using an interactive map interface. Find the best dark sky observation sites near you.
+## Overview
 
-### 📷 Stacking Camera
-Capture multiple exposures with advanced controls inspired by professional camera systems:
+Stakka combines three product areas:
 
-- **Wheel Picker Controls** — iOS-native wheel pickers for precise value selection (exposure, shot count)
-- **Expandable Advanced Menu** — Drag up to reveal aperture, shutter speed, zoom, and shooting mode controls
-- **Configurable Parameters**:
-  - Exposure duration: 0.1-30 seconds
-  - Number of shots: 2-100 frames
-  - Interval between shots: 0-10 seconds
-- **Real-time Progress** — Live capture progress with breathing glow animations
-- **Sequential Capture** — Automated multi-frame capture with async/await
+- **Library stacking** with project-based workflows, grouped calibration frames, TIFF export, and DSS-style comet modes
+- **Capture sequencing** with wheel-picker camera controls and handoff into the stacking project system
+- **Dark-sky exploration** with MapKit-based location readings and a light-pollution surface
 
-### 📚 Library Stacking
-Select existing photos from your library and stack them together:
+The current codebase is beyond the original prototype, but still mid-transition. RAW/FITS import, intermediate exports, live stacking, and real light-pollution data are still in progress.
 
-- Multi-selection up to 100 images
-- Same mean stacking algorithm as camera
-- Save results back to photo library
-- Minimal UI with icon-first design
+## Current Capabilities
 
-### 🎨 灵动美学 Design System
-Modern iOS design language with:
+### Library Projects
 
-- **Continuous corner radii** — Smooth, native iOS curves throughout
-- **Minimal text** — Icons and numbers preferred over verbose labels
-- **Breathing animations** — Subtle pulsing glows on live elements
-- **Dark space theme** — Deep blacks with cosmic blue accents
-- **Monospaced digits** — Stable layouts during value updates
+- Create, open, duplicate, and delete local stacking projects
+- Organize `Light / Dark / Flat / Dark Flat / Bias` frame groups
+- Import frames from Photos or Files
+- Run `analyze -> register -> stack`
+- Save the final result to Photos or export TIFF
+
+### Comet Modes
+
+- `standard`: stars frozen, comet trails
+- `cometOnly`: comet frozen, stars trail
+- `cometAndStars`: comet and stars both frozen
+- Automatic comet estimation after registration
+- Full-screen per-frame comet review and manual correction
+
+### Camera
+
+- Sequential multi-frame capture
+- Wheel-picker controls for exposure and shot count
+- Expandable advanced controls
+- Capture-to-project handoff into the recent stacking project
+
+### Light Pollution
+
+- MapKit-based dark-sky exploration
+- Current-location centering
+- Bortle-style mock readings
 
 ## Architecture
 
-Stakka follows a clean, modular architecture:
+Stakka uses a domain-oriented structure:
 
-```
+```text
 Stakka/
-├── App/                 # Application entry and tab navigation
-├── Features/            # Self-contained feature modules
-│   ├── Camera/          # Multi-exposure capture system
-│   ├── LightPollution/  # Map-based pollution lookup
-│   └── Library/         # Photo library stacking
-└── Core/                # Shared utilities and algorithms
-    ├── ImageStacking/   # Mean stacking algorithm (actor-isolated)
-    ├── Models/          # Data models
-    └── Utilities/       # Design system tokens and extensions
+├── App/
+├── Domains/
+│   ├── Capture/
+│   ├── DarkSky/
+│   ├── Library/
+│   ├── Session/
+│   └── Stacking/
+└── Platform/
 ```
 
-Each feature follows MVVM with `@MainActor` ViewModels and pure SwiftUI views. See [ARCHITECTURE.md](docs/overview/ARCHITECTURE.md) for details.
+Core rules:
+
+- `App` wires dependencies and root navigation
+- `Domains/*/Presentation` owns SwiftUI views and view models
+- `Domains/*/Application` owns orchestration and use cases
+- `Domains/*/Domain` holds business models and protocols
+- `Domains/*/Infrastructure` holds framework adapters and storage
+
+Start with [docs/overview/ARCHITECTURE.md](docs/overview/ARCHITECTURE.md) for the full system guide.
 
 ## Tech Stack
 
-- **SwiftUI** — Declarative UI framework
-- **AVFoundation** — Camera capture and session management
-- **MapKit** — Interactive light pollution map
-- **PhotosUI** — Multi-image selection from library
-- **CoreImage + CoreGraphics** — Image processing pipeline
-- **Swift Concurrency** — Async/await throughout, actor isolation for stacking
-
-Zero third-party dependencies. Built entirely on Apple system frameworks.
-
-## Requirements
-
-- iOS 17.0+
-- Xcode 15.0+
-- Swift 5.9+
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) for project generation
+- SwiftUI
+- AVFoundation
+- MapKit
+- PhotosUI
+- CoreImage + CoreGraphics
+- Vision
+- Swift Concurrency
+- XcodeGen
 
 ## Quick Start
 
 ```bash
-# Install XcodeGen
 brew install xcodegen
-
-# Clone and setup
 git clone https://github.com/stvlynn/Stakka.git
 cd Stakka
 xcodegen generate
-
-# Open in Xcode
 open Stakka.xcodeproj
 ```
 
-Build and run (⌘R). Use a physical device for camera features — simulator shows a test pattern.
+Build from the command line:
 
-See [WORKFLOW.md](docs/development/WORKFLOW.md) for detailed development setup.
-
-## Documentation
-
-- **[AGENTS.md](AGENTS.md)** — AI coding agent guidelines
-- **[docs/overview/ARCHITECTURE.md](docs/overview/ARCHITECTURE.md)** — System architecture and design philosophy
-- **[docs/modules/](docs/modules/)** — Module-specific documentation
-  - [camera.md](docs/modules/camera.md) — Camera capture system
-  - [library-stacking.md](docs/modules/library-stacking.md) — Photo library workflow
-  - [light-pollution.md](docs/modules/light-pollution.md) — Map integration
-  - [image-stacking.md](docs/modules/image-stacking.md) — Stacking algorithm
-  - [design-system.md](docs/modules/design-system.md) — Design tokens and patterns
-- **[docs/development/WORKFLOW.md](docs/development/WORKFLOW.md)** — Development workflow and contribution guide
-
-## Image Stacking Algorithm
-
-Stakka uses **mean stacking** to reduce noise:
-
-```
-For each pixel (x, y):
-    R_out = mean(R_1, R_2, ..., R_n)
-    G_out = mean(G_1, G_2, ..., G_n)
-    B_out = mean(B_1, B_2, ..., B_n)
+```bash
+xcodebuild \
+  -project Stakka.xcodeproj \
+  -scheme Stakka \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+  build
 ```
 
-This improves signal-to-noise ratio by √n. Doubling the frame count improves SNR by ~41%.
+If that simulator is unavailable, use any installed iPhone simulator or a concrete simulator identifier.
 
-The algorithm is actor-isolated for thread safety and uses async/await for non-blocking execution. See [image-stacking.md](docs/modules/image-stacking.md) for implementation details.
+## Docs
 
-## Design Philosophy
+### Start Here
 
-### Minimal Text, Maximum Clarity
+- [docs/README.md](docs/README.md)
+- [docs/overview/ARCHITECTURE.md](docs/overview/ARCHITECTURE.md)
+- [docs/development/WORKFLOW.md](docs/development/WORKFLOW.md)
 
-Stakka assumes users are familiar with photography concepts. The UI uses icons and numbers instead of verbose labels:
+### Module Docs
 
-```
-Good:  [1.5]  [●]  [10]
-        ⏱️    ✨   📷
+- [docs/modules/library-stacking.md](docs/modules/library-stacking.md)
+- [docs/modules/image-stacking.md](docs/modules/image-stacking.md)
+- [docs/modules/camera.md](docs/modules/camera.md)
+- [docs/modules/light-pollution.md](docs/modules/light-pollution.md)
+- [docs/modules/design-system.md](docs/modules/design-system.md)
 
-Bad:   Exposure Time: 1.5 seconds
-       Capture Button
-       Number of Shots: 10
-```
+### Guides
 
-### Wheel Pickers Over Sliders
+- [docs/guides/project-catalog.md](docs/guides/project-catalog.md)
+- [docs/guides/library-workflow.md](docs/guides/library-workflow.md)
+- [docs/guides/comet-mode.md](docs/guides/comet-mode.md)
+- [docs/guides/capture-handoff.md](docs/guides/capture-handoff.md)
 
-Camera controls use iOS-native wheel pickers (like the Clock app) for precise value selection. This provides better accessibility and matches user mental models for photography parameters.
+### Planning
 
-### Continuous Corners Everywhere
+- [docs/roadmap.md](docs/roadmap.md)
 
-All UI elements use continuous corner radii (iOS 13+ style) for visual consistency with Dynamic Island and modern iOS design language.
+## Known Gaps
 
-See [ARCHITECTURE.md](docs/overview/ARCHITECTURE.md) for full design philosophy.
-
-## Project Structure
-
-```
-Stakka/
-├── project.yml                      # XcodeGen configuration
-├── AGENTS.md                        # AI agent guidelines
-├── docs/                            # Documentation
-│   ├── overview/ARCHITECTURE.md
-│   ├── modules/                     # Module docs
-│   └── development/WORKFLOW.md
-└── Stakka/
-    ├── App/
-    │   ├── StakkaApp.swift          # App entry
-    │   └── ContentView.swift        # Tab navigation
-    ├── Features/
-    │   ├── Camera/
-    │   │   ├── CameraView.swift
-    │   │   ├── CameraViewModel.swift
-    │   │   ├── CameraControlsView.swift
-    │   │   ├── CameraSettingsView.swift
-    │   │   └── Components/
-    │   │       ├── WheelPickerView.swift
-    │   │       └── AdvancedControlsMenu.swift
-    │   ├── LightPollution/
-    │   │   └── LightPollutionMapView.swift
-    │   └── Library/
-    │       ├── LibraryStackingView.swift
-    │       └── LibraryStackingViewModel.swift
-    └── Core/
-        ├── ImageStacking/
-        │   └── ImageStacker.swift   # Mean stacking (actor)
-        ├── Models/
-        │   └── Models.swift
-        └── Utilities/
-            ├── DesignSystem.swift   # Design tokens
-            └── Extensions.swift
-```
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Read [ARCHITECTURE.md](docs/overview/ARCHITECTURE.md) to understand the system
-2. Check [WORKFLOW.md](docs/development/WORKFLOW.md) for development setup
-3. Review [AGENTS.md](AGENTS.md) for coding guidelines
-4. Keep PRs focused — one feature per PR
-5. Update relevant module docs with your changes
-
-### Before Submitting
-
-- Build succeeds in Xcode (⌘B)
-- Manual UI testing checklist passed (see [WORKFLOW.md](docs/development/WORKFLOW.md))
-- Documentation updated if adding new features or patterns
-
-## Known Limitations
-
-- **Light pollution data** — Currently uses mock data, needs API integration
-- **Advanced camera controls** — Aperture/shutter/ISO are UI placeholders (not wired to AVFoundation yet)
-- **Auto-stacking** — Camera captures images but doesn't auto-stack on completion yet
-- **Export options** — Limited to saving to photo library (no Files app export)
-
-See individual module docs for detailed limitations and future work.
-
-## Roadmap
-
-- [ ] Real light pollution data integration (API or offline dataset)
-- [ ] Wire advanced camera controls to AVFoundation
-- [ ] Auto-stack after camera capture sequence
-- [ ] Median and sigma-clipping stacking modes
-- [ ] Image alignment before stacking (for handheld shots)
-- [ ] Histogram display during capture
-- [ ] Export to Files app
-- [ ] Favorite locations persistence
-- [ ] Weather data overlay (cloud cover, seeing conditions)
-
-## References
-
-- [Light Pollution Map](https://github.com/cgettings/Light-Pollution-Map) — Pollution data source reference
-- [HoshinoWeaver](https://github.com/Designerspr/HoshinoWeaver) — Stacking algorithm reference
-- [Mijick Camera](https://github.com/Mijick/Camera) — Camera implementation reference
+- No RAW/FITS import yet
+- No calibrated or registered intermediate export yet
+- No live stacking yet
+- No background calibration, channel alignment, or cosmetic correction yet
+- Advanced camera controls are not fully wired to device hardware
+- Light-pollution data is still mocked
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
-
-## Acknowledgments
-
-Built with inspiration from professional astrophotography workflows and iOS design language. Special thanks to the open-source astronomy and iOS development communities.
+MIT. See [LICENSE](LICENSE).

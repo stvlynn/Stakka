@@ -1,8 +1,12 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
+import UniformTypeIdentifiers
 
 struct LibraryStackingView: View {
     @StateObject private var viewModel: LibraryStackingViewModel
+    @State private var isPresentingCometReview = false
+    @State private var cometReviewStartFrameID: UUID?
+    @State private var isPresentingProjectBrowser = false
 
     init(viewModel: LibraryStackingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -16,97 +20,267 @@ struct LibraryStackingView: View {
 
                 ScrollView {
                     VStack(spacing: Spacing.lg) {
-                        if viewModel.selectedImages.isEmpty {
-                            emptyStateView
-                        } else {
-                            PhotoGridView(images: viewModel.selectedImages) {
-                                viewModel.clearSelection()
-                            }
+                        StackProjectSummaryCard(project: viewModel.project)
 
-                            if viewModel.isStacking {
-                                stackingProgressView
-                            }
+                        if viewModel.project.frames.isEmpty {
+                            introCard
+                        }
 
-                            if let result = viewModel.stackedImage {
-                                StackedResultCard(image: result) {
-                                    viewModel.saveStackedImage()
+                        StackingModePickerView(
+                            selectedMode: viewModel.project.mode,
+                            onSelect: viewModel.setMode
+                        )
+
+                        CometModePickerView(
+                            selectedMode: viewModel.project.cometMode,
+                            onSelect: viewModel.setCometMode
+                        )
+
+                        if let cometMode = viewModel.project.cometMode {
+                            CometReviewStatusCard(
+                                mode: cometMode,
+                                reviewedCount: viewModel.cometReviewedCount,
+                                totalCount: viewModel.cometReviewFrameIDs.count,
+                                needsReviewCount: viewModel.project.enabledFramesNeedingCometReview.count,
+                                onReview: {
+                                    openCometReview(startingFrameID: viewModel.firstCometReviewFrameID)
                                 }
+                            )
+                        }
+
+                        if viewModel.phase != .idle {
+                            ProcessingStatusCard(phase: viewModel.phase)
+                        }
+
+                        if let errorMessage = viewModel.errorMessage {
+                            errorCard(message: errorMessage)
+                        }
+
+                        ForEach(StackFrameKind.allCases) { kind in
+                            StackFrameSectionView(
+                                kind: kind,
+                                frames: viewModel.project.frames(of: kind),
+                                isWorking: viewModel.isWorking,
+                                referenceFrameID: viewModel.project.referenceFrameID,
+                                cometModeEnabled: viewModel.hasCometModeEnabled,
+                                cometAnnotations: viewModel.project.cometAnnotations,
+                                onImport: { items in
+                                    await viewModel.importFrames(from: items, kind: kind)
+                                },
+                                onImportFiles: { urls in
+                                    await viewModel.importFrames(from: urls, kind: kind)
+                                },
+                                onClear: {
+                                    viewModel.clearGroup(kind)
+                                },
+                                onToggle: { frameID in
+                                    viewModel.toggleFrame(frameID)
+                                },
+                                onRemove: { frameID in
+                                    viewModel.removeFrame(frameID)
+                                },
+                                onSetReference: { frameID in
+                                    viewModel.setReferenceFrame(frameID)
+                                },
+                                onEditComet: { frameID in
+                                    openCometReview(startingFrameID: frameID)
+                                }
+                            )
+                        }
+
+                        actionPanel
+
+                        if let result = viewModel.result {
+                            StackedResultCard(result: result) {
+                                viewModel.saveResult()
+                            } onExportTIFF: {
+                                viewModel.prepareResultTIFFExport()
                             }
                         }
                     }
                     .padding(Spacing.md)
                 }
             }
-            .navigationTitle("图库堆栈")
+            .navigationTitle("图库工程")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .task {
+                await viewModel.loadRecentProjectIfNeeded()
+            }
+            .fileExporter(
+                isPresented: $viewModel.isPresentingTIFFExporter,
+                document: viewModel.pendingTIFFExport.map { StackedTIFFDocument(data: $0.data) },
+                contentType: .tiff,
+                defaultFilename: viewModel.pendingTIFFExport?.filename
+            ) { _ in
+                viewModel.clearPreparedTIFFExport()
+            }
+            .sheet(isPresented: $isPresentingCometReview) {
+                CometAnnotationReviewView(
+                    frames: viewModel.project.enabledLightFrames,
+                    annotations: viewModel.project.cometAnnotations,
+                    startingFrameID: cometReviewStartFrameID,
+                    onUpdatePoint: { frameID, point in
+                        viewModel.markCometPoint(point, for: frameID)
+                    },
+                    onUseEstimated: { frameID in
+                        viewModel.restoreEstimatedCometPoint(for: frameID)
+                    }
+                )
+            }
+            .sheet(isPresented: $isPresentingProjectBrowser) {
+                StackProjectBrowserView(
+                    currentProjectID: viewModel.project.id,
+                    summaries: viewModel.projectSummaries,
+                    onOpen: viewModel.openProject,
+                    onDuplicate: viewModel.duplicateProject,
+                    onDelete: viewModel.deleteProject,
+                    onCreate: viewModel.createNewProject
+                )
+            }
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    PhotosPicker(selection: $viewModel.selectedItems, maxSelectionCount: 100, matching: .images) {
-                        Image(systemName: "photo.badge.plus")
-                            .foregroundStyle(Color.cosmicBlue)
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        isPresentingProjectBrowser = true
+                    } label: {
+                        Image(systemName: "books.vertical")
+                            .foregroundStyle(Color.starWhite)
                     }
                 }
 
-                if !viewModel.selectedImages.isEmpty && viewModel.stackedImage == nil {
-                    ToolbarItem(placement: .bottomBar) {
-                        Button {
-                            viewModel.stackImages()
-                        } label: {
-                            HStack {
-                                Image(systemName: "square.stack.3d.up.fill")
-                                Text("开始堆栈")
-                            }
-                            .font(.stakkaCaption)
-                            .fontWeight(.semibold)
+                if !viewModel.project.frames.isEmpty {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("新建") {
+                            viewModel.createNewProject()
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.cosmicBlue)
-                        .disabled(viewModel.isStacking)
+                        .foregroundStyle(Color.galaxyPink)
                     }
                 }
             }
         }
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: Spacing.lg) {
-            Spacer()
+    private var introCard: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack {
+                Image(systemName: "sparkles.rectangle.stack.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(Color.cosmicBlue)
 
-            ZStack {
-                Circle()
-                    .fill(Color.spaceSurface.opacity(0.3))
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "photo.stack")
-                    .font(.system(size: 48))
-                    .foregroundStyle(Color.textTertiary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DSS 风格工程流")
+                        .font(.stakkaHeadline)
+                        .foregroundStyle(Color.starWhite)
+                    Text("导入五类帧，先分析，再配准，再堆栈")
+                        .font(.stakkaCaption)
+                        .foregroundStyle(Color.textSecondary)
+                }
             }
-
-            VStack(spacing: Spacing.xs) {
-                Text("选择照片开始堆栈")
-                    .font(.stakkaHeadline)
-                    .foregroundStyle(Color.starWhite)
-            }
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.md)
+        .glassCard()
     }
 
-    private var stackingProgressView: some View {
+    private var actionPanel: some View {
         VStack(spacing: Spacing.md) {
-            ProgressView()
-                .tint(.cosmicBlue)
-                .scaleEffect(1.5)
+            HStack(spacing: Spacing.sm) {
+                actionButton(
+                    title: "分析",
+                    symbol: "viewfinder",
+                    tint: .spaceSurfaceElevated,
+                    isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.isEmpty,
+                    action: viewModel.analyze
+                )
 
-            Text("处理中...")
-                .font(.stakkaCaption)
+                actionButton(
+                    title: "配准",
+                    symbol: "scope",
+                    tint: .spaceSurfaceElevated,
+                    isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
+                    action: viewModel.register
+                )
+
+                actionButton(
+                    title: "堆栈",
+                    symbol: "square.stack.3d.up.fill",
+                    tint: .cosmicBlue,
+                    isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
+                    action: viewModel.stack
+                )
+            }
+
+            Text(actionHint)
+                .font(.stakkaSmall)
                 .foregroundStyle(Color.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity)
-        .padding(Spacing.xl)
+        .padding(Spacing.md)
         .glassCard()
+    }
+
+    private func actionButton(
+        title: String,
+        symbol: String,
+        tint: Color,
+        isDisabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: symbol)
+                Text(title)
+            }
+            .font(.stakkaCaption)
+            .fontWeight(.semibold)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.md)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(tint)
+        .disabled(isDisabled)
+    }
+
+    private func errorCard(message: String) -> some View {
+        HStack(spacing: Spacing.md) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(Color.galaxyPink)
+
+            Text(message)
+                .font(.stakkaCaption)
+                .foregroundStyle(Color.starWhite)
+
+            Spacer()
+        }
+        .padding(Spacing.md)
+        .background(Color.galaxyPink.opacity(0.12))
+        .overlay(
+            RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
+                .stroke(Color.galaxyPink.opacity(0.2), lineWidth: 1)
+        )
+        .continuousCorners(CornerRadius.lg)
+    }
+
+    private var actionHint: String {
+        if viewModel.project.cometMode != nil {
+            return "选择彗星模式后，先配准自动估计彗星位置，再进入彗星检查。"
+        }
+
+        return "Light 至少 2 张，参考帧会自动选分数最高者，也可手动指定。"
+    }
+
+    private func openCometReview(startingFrameID: UUID?) {
+        guard viewModel.project.cometMode != nil else {
+            return
+        }
+
+        guard !viewModel.project.cometAnnotations.isEmpty else {
+            viewModel.openCometReviewPrerequisiteMessage()
+            return
+        }
+
+        cometReviewStartFrameID = startingFrameID
+        isPresentingCometReview = true
     }
 }

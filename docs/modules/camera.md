@@ -226,6 +226,16 @@ modeOptions: [String]        = ["A", "M", "P", "S"]
 
 - Wire aperture, shutter, zoom to AVFoundation `AVCaptureDevice`
 - Implement ISO control
-- Auto-stack after capture sequence completes
+- Add direct navigation from capture completion into the project review flow
 - Histogram display during capture
 - Focus peaking overlay
+
+## Current Integration
+
+Completed capture sequences now overwrite the app's recent stacking project with a new capture-origin `Light` frame set. The library tab restores that project and can continue with registration, comet review, stacking, and export using the same `StackingProject` model.
+
+Relevant code:
+
+- `Domains/Capture/Presentation/CameraViewModel.swift`
+- `Domains/Stacking/Application/ReplaceRecentStackProjectWithCapturedFramesUseCase.swift`
+- `Domains/Library/Presentation/LibraryStackingViewModel.swift`

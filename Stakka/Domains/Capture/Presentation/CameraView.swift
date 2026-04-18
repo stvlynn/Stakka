@@ -26,6 +26,12 @@ struct CameraView: View {
 
                 VStack {
                     Spacer()
+                    if let recentProjectTitle = viewModel.recentProjectTitle, !viewModel.isCapturing {
+                        captureProjectCard(title: recentProjectTitle)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.bottom, Spacing.md)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                     CameraControlsView(viewModel: viewModel)
                         .padding(.horizontal, Spacing.md)
                         .padding(.bottom, Spacing.lg)
@@ -52,6 +58,27 @@ struct CameraView: View {
                 viewModel.setupCamera()
             }
         }
+    }
+
+    private func captureProjectCard(title: String) -> some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "sparkles.rectangle.stack.fill")
+                .foregroundStyle(Color.cosmicBlue)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("已写入最近工程")
+                    .font(.stakkaCaption)
+                    .foregroundStyle(Color.starWhite)
+                Text(title)
+                    .font(.stakkaSmall)
+                    .foregroundStyle(Color.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+        }
+        .padding(Spacing.md)
+        .glassCard()
     }
 }
 

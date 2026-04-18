@@ -15,6 +15,7 @@ final class CameraViewModel: ObservableObject {
     @Published var showShutterPicker = false
     @Published var showZoomPicker = false
     @Published var showModePicker = false
+    @Published var recentProjectTitle: String?
 
     @Published var exposureTime: Double = 1.0
     @Published var numberOfShots: Int = 10
@@ -28,18 +29,21 @@ final class CameraViewModel: ObservableObject {
     private let startCaptureSequence: StartCaptureSequenceUseCase
     private let stopCaptureSequence: StopCaptureSequenceUseCase
     private let persistSession: PersistSessionUseCase
+    private let replaceRecentProjectWithCapturedFrames: ReplaceRecentStackProjectWithCapturedFramesUseCase
     private var captureTask: Task<Void, Never>?
 
     init(
         prepareCameraSession: PrepareCameraSessionUseCase,
         startCaptureSequence: StartCaptureSequenceUseCase,
         stopCaptureSequence: StopCaptureSequenceUseCase,
-        persistSession: PersistSessionUseCase
+        persistSession: PersistSessionUseCase,
+        replaceRecentProjectWithCapturedFrames: ReplaceRecentStackProjectWithCapturedFramesUseCase
     ) {
         self.prepareCameraSession = prepareCameraSession
         self.startCaptureSequence = startCaptureSequence
         self.stopCaptureSequence = stopCaptureSequence
         self.persistSession = persistSession
+        self.replaceRecentProjectWithCapturedFrames = replaceRecentProjectWithCapturedFrames
     }
 
     func setupCamera() {
@@ -66,6 +70,7 @@ final class CameraViewModel: ObservableObject {
                 }
 
                 capturedFrames = frames
+                recentProjectTitle = try? await replaceRecentProjectWithCapturedFrames.execute(frames: frames).title
                 isCapturing = false
 
                 await persistSession.execute(

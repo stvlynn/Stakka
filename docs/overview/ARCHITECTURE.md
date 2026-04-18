@@ -177,22 +177,45 @@ Stakka/
 
 **Implementation:**
 - Actor-isolated for thread safety
-- Mean stacking (pixel-wise RGB averaging)
-- CoreImage + CoreGraphics pipeline
+- Project-based workflow: analyze → register → stack
+- Frame model includes `Light`, `Dark`, `Flat`, `Dark Flat`, `Bias`
+- Vision-based homographic registration with translational fallback for enabled light frames
+- Multiple light combine modes: average, median, kappa-sigma, median kappa-sigma
+- Optional DSS-style comet workflow: standard, comet-only, comet+stars
 - Async/await for non-blocking execution
 
-**Algorithm:**
-```
-For each pixel (x, y):
-    R_out = mean(R_1, R_2, ..., R_n)
-    G_out = mean(G_1, G_2, ..., G_n)
-    B_out = mean(B_1, B_2, ..., B_n)
-```
-
 **Performance:**
-- Processes images in batches
-- Uses CGContext for pixel access
-- Returns UIImage for display/save
+- Imported frames are normalized and downscaled before processing
+- Linear RGBA buffers are used for calibration and combine
+- Returns `UIImage` for in-app preview and photo-library save
+
+### 2.1 Library Project Workflow
+
+The library tab now behaves like a stacking project editor instead of a one-off picker:
+
+- each frame is assigned to a group
+- project state is held in `StackingProject`
+- analysis and registration results are written back into the same project model
+- UI renders the project as grouped sections plus a recap/result area
+- projects are stored in a local project catalog and one project is restored as recent on launch
+- final results can be saved to Photos or exported as TIFF
+- comet annotations are persisted with the project and reviewed in a dedicated full-screen flow
+
+### 2.2 Project Catalog
+
+Stacking projects are no longer stored as a single recent blob. The current storage model is:
+
+- local project catalog under app storage
+- one directory per project
+- per-project frame cache
+- explicit recent-project pointer
+
+This enables:
+
+- project browsing
+- project duplication
+- project deletion
+- camera capture handoff into a real project instead of an in-memory queue
 
 ### 3. Design System
 
@@ -229,6 +252,16 @@ AnimationPreset.gentle        // 0.5s ease in/out
 **Data Source:**
 - Mock data currently
 - Future: Light Pollution Map API integration
+
+## Current Product Baseline
+
+At the current codebase state:
+
+- library projects are the main production workflow
+- comet modes are implemented for library projects
+- camera capture hands off into the recent project
+- TIFF export exists for final outputs
+- RAW/FITS import, intermediate exports, and live stacking are still pending
 
 ## State Management
 

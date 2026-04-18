@@ -13,3 +13,11 @@ extension Double {
         return (self * divisor).rounded() / divisor
     }
 }
+
+extension ISO8601DateFormatter {
+    static let fileSafe: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+}

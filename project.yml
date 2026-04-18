@@ -48,8 +48,22 @@ targets:
         NSLocationWhenInUseUsageDescription: "Stakka needs your location to show light pollution data"
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.stakka.app
         DEVELOPMENT_TEAM: ""
         CODE_SIGN_STYLE: Automatic
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
+  StakkaTests:
+    type: bundle.unit-test
+    platform: iOS
+    hostApplication: Stakka
+    sources:
+      - StakkaTests
+    dependencies:
+      - target: Stakka
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stakka.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"

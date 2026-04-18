@@ -8,7 +8,11 @@ struct ImportPhotosUseCase {
         self.repository = repository
     }
 
-    func execute(from items: [PhotosPickerItem]) async -> [ImportedImage] {
-        await repository.loadImages(from: items)
+    func execute(from items: [PhotosPickerItem], kind: StackFrameKind) async -> [StackFrame] {
+        await repository.loadFrames(from: items, kind: kind)
+    }
+
+    func execute(from fileURLs: [URL], kind: StackFrameKind) async -> [StackFrame] {
+        await repository.loadFrames(from: fileURLs, kind: kind)
     }
 }

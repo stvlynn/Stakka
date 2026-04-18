@@ -1,12 +1,18 @@
 # Image Stacking Module
 
-The image stacking module provides the core algorithm that combines multiple exposures into a single image with reduced noise. It is shared by both the camera and library features.
+The stacking module is now a three-stage pipeline shared by the library workflow:
+
+1. `analyze` — compute frame metrics and choose a reference frame
+2. `register` — estimate per-frame offsets against the reference frame
+3. `stack` — calibrate, align, and combine enabled light frames
 
 ## Files
 
 ```
 Domains/Stacking/
 ├── Application/
+│   ├── AnalyzeStackProjectUseCase.swift
+│   ├── RegisterStackProjectUseCase.swift
 │   └── RunStackingUseCase.swift
 ├── Domain/
 │   └── StackingTypes.swift
@@ -15,190 +21,112 @@ Domains/Stacking/
         └── ImageStacker.swift
 ```
 
-## Algorithm: Mean Stacking
-
-Mean stacking averages pixel values across all input images. For each pixel position (x, y):
-
-```
-R_out = (R_1 + R_2 + ... + R_n) / n
-G_out = (G_1 + G_2 + ... + G_n) / n
-B_out = (B_1 + B_2 + ... + B_n) / n
-```
-
-This reduces random noise by a factor of √n. Doubling the number of frames improves signal-to-noise ratio by ~41%.
-
-### Why Mean Stacking
-
-| Method   | Noise Reduction | Artifact Resistance | Complexity |
-|----------|-----------------|---------------------|------------|
-| Mean     | √n              | Low                 | Low        |
-| Median   | Moderate        | High (hot pixels)   | Medium     |
-| Sigma    | High            | High                | High       |
-
-Mean stacking is chosen as the baseline for its simplicity and predictable behavior. Median or sigma clipping can be added as future modes.
-
-## Implementation
-
-### Actor Isolation
-
-`ImageStacker` is declared as an `actor` to prevent data races, and is consumed through `RunStackingUseCase`:
-
-```swift
-actor ImageStacker: StackingProcessor {
-    func process(_ request: StackingRequest) async throws -> StackingResult
-}
-```
-
-Callers use `await`:
-
-```swift
-let result = await ImageStacker().stackImages(images)
-```
-
-### Pipeline
-
-```
-[UIImage] input
-    ↓
-Convert each image → CGImage
-    ↓
-Extract pixel data → [UInt8] arrays
-    ↓
-For each pixel: sum RGB values
-    ↓
-Divide by n → averaged pixels
-    ↓
-Create CGContext with result pixels
-    ↓
-Convert → UIImage output
-```
-
-### Framework Usage
-
-- `UIImage` → `CGImage` for pixel access
-- `CGContext` for pixel buffer manipulation
-- `CoreImage` for color space handling
-- `CoreGraphics` for raw pixel operations
-
-### Memory Considerations
-
-Current implementation processes all images in memory simultaneously. For 100 images at 12MP:
-
-```
-100 × 12,000,000 pixels × 4 bytes = ~4.8 GB
-```
-
-This is over device limits. In practice, input images are lower resolution (camera preview, not full sensor). For production use, consider:
-
-- Streaming pipeline (process images in batches)
-- Pyramid reduction before stacking
-- Tile-based processing for large images
-
 ## Public Interface
 
 ```swift
-actor ImageStacker {
-    // Stack an array of images, returns nil if images is empty or incompatible
-    func stackImages(_ images: [UIImage]) async -> UIImage?
+protocol StackingProcessor {
+    func analyze(_ project: StackingProject) async throws -> StackingProject
+    func register(_ project: StackingProject) async throws -> StackingProject
+    func stack(_ project: StackingProject) async throws -> StackingResult
 }
 ```
 
-## Consumer Integration
+The domain now models:
 
-### From CameraViewModel
+- `StackFrameKind`
+- `StackFrame`
+- `StackingProject`
+- `FrameAnalysis`
+- `FrameRegistration`
+- `StackingMode`
+- `StackingRecap`
 
-```swift
-// After capture sequence
-let stacker = ImageStacker()
-let result = await stacker.stackImages(capturedImages)
+## Analysis
+
+`ImageStacker.analyze(_:)` computes lightweight astronomy-oriented heuristics per frame:
+
+- star count
+- background level
+- approximate FWHM
+- frame score
+
+If the user has not chosen a reference frame, the highest-scoring enabled `Light` frame becomes the project reference.
+
+## Registration
+
+Registration uses Apple Vision image registration APIs. Phase 1 attempts homographic registration first and falls back to translational alignment when Vision cannot resolve a stable homography. Registration is stored as a projective transform with method and confidence.
+
+The output of registration is fed back into the project model so the UI can display offsets before stacking.
+
+## Comet Stacking
+
+The stacking module now supports three DSS-style comet modes:
+
+- `standard` — stars frozen, comet trails
+- `cometOnly` — comet frozen, stars trail
+- `cometAndStars` — comet and stars both frozen
+
+Comet mode is driven by `StackingProject.cometMode` and per-frame `CometAnnotation` data. Registration writes star alignment as before, then an additional comet-alignment pass shifts the already star-aligned buffers into a comet reference frame.
+
+Automatic comet estimation runs after registration for enabled `Light` frames when comet mode is enabled. It:
+
+1. warps each frame into the star-aligned reference grid
+2. builds a median background field
+3. extracts moving bright residuals
+4. estimates one comet point per frame with confidence
+5. interpolates weak/missing detections and flags low-confidence frames for review
+
+The final `cometAndStars` result is produced by blending the comet-frozen composite back over the star-frozen composite in a local comet region.
+
+## Calibration
+
+Stacking supports the following calibration chain:
+
+- master bias from enabled `Bias` frames
+- master dark from enabled `Dark` frames, bias-calibrated when possible
+- master dark flat from enabled `Dark Flat` frames
+- normalized master flat from enabled `Flat` frames
+
+Enabled `Light` frames are calibrated in this order:
+
+```text
+light
+  - bias
+  - dark
+  / normalized flat
 ```
 
-### From LibraryStackingViewModel
+## Stacking Modes
 
-```swift
-func stackImages() {
-    Task {
-        isStacking = true
-        let stacker = ImageStacker()
-        stackedImage = await stacker.stackImages(selectedImages)
-        isStacking = false
-    }
-}
-```
+Available light-frame combine modes:
 
-## Saving Results
+- `average`
+- `median`
+- `kappaSigma`
+- `medianKappaSigma`
 
-After stacking, images are saved to the photo library:
+Calibration masters are averaged in this phase even if the light-frame mode is different.
 
-```swift
-func saveStackedImage() {
-    guard let image = stackedImage else { return }
-    UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-}
-```
+## Implementation Notes
 
-Requires `NSPhotoLibraryAddUsageDescription` in Info.plist.
+- `ImageStacker` remains actor-isolated
+- image buffers are converted into linear RGBA floats
+- imported images are normalized and downscaled before processing
+- aligned frames are warped into the reference frame grid before combining
 
-## Future Stacking Modes
+## Current Constraints
 
-Planned extensions to the algorithm:
+- no RAW/FITS decode yet
+- no calibrated/registered intermediate export yet
+- no live stacking yet
+- no background calibration, channel alignment, or cosmetic correction yet
 
-```swift
-enum StackingMode {
-    case mean          // Current implementation
-    case median        // Better hot pixel rejection
-    case sigmaClipping // Best noise reduction, most complex
-    case lightening    // Max pixel (star trails)
-    case comet         // Hybrid mean + lightening
-}
-```
+## Test Priorities
 
-## Error Handling
-
-Current implementation returns `nil` on failure. Future improvements:
-
-```swift
-enum StackingError: Error {
-    case emptyInput
-    case incompatibleDimensions
-    case insufficientMemory
-    case processingFailed
-}
-```
-
-## Performance Benchmarks
-
-Approximate processing times on iPhone 14 Pro (approximate, varies with image size):
-
-| Image Count | Resolution | Estimated Time |
-|-------------|------------|----------------|
-| 10          | 2MP        | ~0.5s          |
-| 30          | 2MP        | ~1.5s          |
-| 100         | 2MP        | ~5s            |
-
-Higher resolution inputs scale approximately linearly.
-
-## Testing
-
-Unit tests should cover:
-
-- Single image input returns same image
-- Two identical images return same image
-- Two complementary images average correctly
-- Empty array returns nil
-- Mismatched dimensions handled gracefully
-
-```swift
-func testMeanStackingOfIdenticalImages() async {
-    let image = UIImage(named: "test_star_field")!
-    let result = await ImageStacker().stackImages([image, image])
-    // Result should match input within floating point tolerance
-    XCTAssertNotNil(result)
-}
-```
-
-## References
-
-- [Stacking (astronomy)](https://en.wikipedia.org/wiki/Lucky_imaging)
-- [HoshinoWeaver](https://github.com/Designerspr/HoshinoWeaver) — Reference implementation
-- [Signal-to-noise ratio improvement with averaging](https://www.cloudynights.com/topic/647458-stacking-and-signal-to-noise-improvement/)
+- analysis returns stable metrics for known fixtures
+- reference frame auto-selection is deterministic
+- registration returns zero offset for the reference frame
+- calibration chain behaves correctly with missing optional groups
+- all four stacking modes return a valid image for matching light frames
+- TIFF export data is generated for the final stack result
+- all three comet modes return a valid image when comet annotations are present

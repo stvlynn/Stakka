@@ -1,6 +1,6 @@
 # Library Stacking Module
 
-The library stacking module allows users to select existing photos and combine them using the image stacking algorithm. It shares the stacking engine with the camera module.
+The library stacking module is now a project-based workflow instead of a single-shot photo picker. Users build a stacking project with five frame groups, analyze the project, register enabled light frames, then run stacking.
 
 ## Files
 
@@ -10,193 +10,112 @@ Domains/Library/
 │   ├── LibraryStackingView.swift
 │   ├── LibraryStackingViewModel.swift
 │   └── Components/
-│       ├── PhotoGridView.swift
+│       ├── StackProjectBrowserView.swift
+│       ├── StackFrameSectionView.swift
+│       ├── StackProjectSummaryCard.swift
+│       ├── StackingModePickerView.swift
+│       ├── ProcessingStatusCard.swift
 │       └── StackedResultCard.swift
 ├── Application/
 │   ├── ImportPhotosUseCase.swift
 │   └── ExportStackedImageUseCase.swift
 ├── Domain/
-│   ├── ImportedImage.swift
 │   └── PhotoLibraryRepository.swift
 └── Infrastructure/
     └── PhotoKit/
         └── SystemPhotoLibraryRepository.swift
 ```
 
-## LibraryStackingViewModel
+## Workflow
+
+The module exposes a DSS-style sequence:
+
+1. Create or open a stacking project
+2. Import frames into `Light / Dark / Flat / Dark Flat / Bias` from Photos or Files
+3. Pick a stacking mode
+4. Run `分析`
+5. Run `配准`
+6. Run `堆栈`
+7. Save the final image or export a TIFF file
+
+The current iOS implementation supports Photos imports and file-based image imports. Each imported frame is normalized and downscaled for on-device processing. Projects are stored in a local project catalog and one project is marked as the current recent project.
+
+## View Model
+
+`LibraryStackingViewModel` owns a single `StackingProject` plus transient UI state:
 
 ```swift
-@MainActor
-class LibraryStackingViewModel: ObservableObject {
-    @Published var selectedItems: [PhotosPickerItem] = []
-    @Published var selectedImages: [ImportedImage] = []
-    @Published var isStacking: Bool = false
-    @Published var stackedImage: UIImage? = nil
-}
+@Published private(set) var project: StackingProject
+@Published private(set) var phase: ProcessingPhase
+@Published private(set) var result: StackingResult?
+@Published private(set) var errorMessage: String?
 ```
 
-### Operations
+Important commands:
 
 ```swift
-// Triggered by PhotosPickerItem changes
-// Loads UIImage from each PhotosPickerItem
-func loadImages() async
-
-// Runs ImageStacker on selectedImages
-func stackImages()
-
-// Saves stackedImage to photo library
-func saveStackedImage()
+func importFrames(from items: [PhotosPickerItem], kind: StackFrameKind) async
+func setReferenceFrame(_ frameID: UUID)
+func analyze()
+func register()
+func stack()
+func saveResult()
 ```
 
-## LibraryStackingView
+Any frame mutation invalidates cached analysis, registration, and the previous stack result.
 
-Three states the view can be in:
+## UI Structure
 
-### 1. Empty State
+`LibraryStackingView` is a vertically stacked engineering surface:
 
-When `selectedImages.isEmpty`:
+- `StackProjectBrowserView` — open, duplicate, delete, or create projects
+- `StackProjectSummaryCard` — project title, reference frame, enabled-frame counts
+- `StackingModePickerView` — `average / median / kappaSigma / medianKappaSigma`
+- `CometModePickerView` — off, standard, comet-only, comet+stars
+- `CometReviewStatusCard` — comet review progress and review entry
+- `ProcessingStatusCard` — active phase
+- five `StackFrameSectionView` sections
+- action panel for `分析 / 配准 / 堆栈`
+- `StackedResultCard` — final image plus recap badges
 
-```
-        [📷]              ← large icon
-   选择照片开始堆栈         ← single line, no description
-```
+Each frame section supports:
 
-### 2. Images Selected
+- importing additional images into that group
+- importing file-based images into that group
+- clearing the group
+- toggling a frame enabled/disabled
+- removing a frame
+- marking a `Light` frame as the reference frame
+- opening a `Light` frame directly in the comet-review flow when comet mode is enabled
 
-When images are loaded, shows:
+## Comet Review Flow
 
-```
-[📷 12]                [×]    ← count + clear button (icon, not "Clear" text)
-┌──┬──┬──┬──┐
-│  │  │  │  │
-└──┴──┴──┴──┘          ← LazyVGrid, 100×100 thumbnails
-[  开始堆栈  ]          ← bottom bar button
-```
+When comet mode is enabled:
 
-### 3. Stacking In Progress
+1. the user runs `配准`
+2. the stacker auto-estimates one comet point per enabled `Light` frame
+3. frames with low confidence are marked as needing review
+4. the user opens the comet review sheet
+5. the user taps on each frame to override the comet core position where needed
 
-```
-        [⟳]              ← ProgressView
-       处理中...          ← minimal text
-```
+The review sheet supports:
 
-### 4. Result Ready
+- per-frame navigation
+- zoom and pan on the current frame
+- tap-to-place comet point
+- restoring the automatically estimated point
 
-```
-[✨ 堆栈完成]             ← header with breathing glow icon
-┌────────────────────┐
-│                    │
-│   stacked image    │  ← gradient border (cosmicBlue → nebulaPurple)
-│                    │
-└────────────────────┘
-[       保存         ]  ← save button
-```
+Stacking is blocked while any enabled `Light` frame still requires comet review.
 
-## PhotosPicker Integration
+## Current Constraints
 
-Uses `PhotosPickerItem` binding for multi-selection:
+- Camera capture can overwrite the recent project with a new capture-origin light-frame project
+- The file importer currently targets standard raster images and TIFF; RAW/FITS are not wired yet
+- TIFF export covers the final stacked image only
+- Intermediate calibrated/registered frame export is still missing
 
-```swift
-PhotosPicker(
-    selection: $viewModel.selectedItems,
-    maxSelectionCount: 100,
-    matching: .images
-) {
-    Image(systemName: "photo.badge.plus")
-}
-```
+## Next Useful Extensions
 
-Loading images from `PhotosPickerItem`:
-
-```swift
-for item in selectedItems {
-    if let data = try? await item.loadTransferable(type: Data.self),
-       let image = UIImage(data: data) {
-        selectedImages.append(image)
-    }
-}
-```
-
-## Data Flow
-
-```
-User taps [photo.badge.plus]
-    → PhotosPicker sheet appears
-    → User selects photos
-    → selectedItems updates
-    
-selectedItems onChange
-    → loadImages() runs
-    → UIImages loaded async
-    → selectedImages populates
-    → LazyVGrid renders thumbnails
-
-User taps [开始堆栈]
-    → stackImages() called
-    → isStacking = true
-    → ImageStacker.stackImages() runs async
-    → stackedImage set
-    → isStacking = false
-    → Result view appears
-
-User taps [保存]
-    → saveStackedImage()
-    → UIImageWriteToSavedPhotosAlbum()
-    → Photo saved to library
-```
-
-## Clear Behavior
-
-Clear button removes all state:
-
-```swift
-withAnimation(AnimationPreset.smooth) {
-    viewModel.selectedItems.removeAll()
-    viewModel.selectedImages.removeAll()
-    viewModel.stackedImage = nil
-}
-```
-
-## Image Grid
-
-```swift
-LazyVGrid(
-    columns: [GridItem(.adaptive(minimum: 100), spacing: Spacing.sm)],
-    spacing: Spacing.sm
-)
-```
-
-Each thumbnail:
-- 100×100 fixed frame
-- `.scaledToFill()` crop
-- Continuous corners (CornerRadius.md)
-- cosmicBlue border overlay
-
-## Toolbar Structure
-
-```swift
-// Top trailing
-PhotosPicker(...)           // always visible
-
-// Bottom bar (conditional)
-if !selectedImages.isEmpty && stackedImage == nil {
-    Button("开始堆栈")       // only when images loaded and not yet stacked
-}
-```
-
-## Navigation
-
-- Title: "图库堆栈"
-- `.ultraThinMaterial` navigation bar
-- Dark color scheme
-
-## Future Work
-
-- Progress reporting per-image during loading
-- Remove individual images from selection
-- Alignment before stacking (important for handheld shots)
-- Multiple stacking algorithm modes (median, sigma clipping)
-- Comparison view (before/after)
-- Export to Files app
-- Batch processing multiple output images
+- Add FITS import and RAW decode
+- Export final TIFF and calibrated/registered intermediates
+- Add batch project execution
