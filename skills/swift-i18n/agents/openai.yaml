@@ -1,0 +1,4 @@
+interface:
+  display_name: "Swift i18n"
+  short_description: "SwiftUI String Catalog localization workflow"
+  default_prompt: "Use $swift-i18n to add or review String Catalog localization in this Swift or SwiftUI project."
