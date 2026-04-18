@@ -289,9 +289,10 @@ Use `swift-i18n`.
 
 Default to:
 
-- `${CODEX_HOME:-$HOME/.codex}/skills/swift-i18n`
+- `skills/swift-i18n` at the repository root
+- concrete path for this repo: `/Users/steven/code/stakka/skills/swift-i18n`
 
-This keeps the skill auto-discoverable without adding repo-local agent coupling.
+This keeps the skill versioned with the project and allows the repository to carry its own SwiftUI and localization conventions. Because this is a project-local skill rather than a global user skill, agents should be given the explicit path when using it.
 
 ### Skill Purpose
 
