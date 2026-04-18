@@ -1,0 +1,11 @@
+.DS_Store
+*.xcodeproj
+!project.yml
+*.xcworkspace
+.derivedData/
+DerivedData/
+.swiftpm/
+*.swiftmodule
+*.swiftdoc
+*.swiftsourceinfo
+xcuserdata/
