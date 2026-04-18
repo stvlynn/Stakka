@@ -11,7 +11,9 @@ targets:
     type: application
     platform: iOS
     sources:
-      - Stakka
+      - path: Stakka
+        excludes:
+          - "**/*.xcodeproj"
     info:
       path: Stakka/Info.plist
       properties:

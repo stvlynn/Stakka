@@ -5,8 +5,14 @@ The image stacking module provides the core algorithm that combines multiple exp
 ## Files
 
 ```
-Core/ImageStacking/
-└── ImageStacker.swift    # Actor — the single public interface
+Domains/Stacking/
+├── Application/
+│   └── RunStackingUseCase.swift
+├── Domain/
+│   └── StackingTypes.swift
+└── Infrastructure/
+    └── CoreImage/
+        └── ImageStacker.swift
 ```
 
 ## Algorithm: Mean Stacking
@@ -35,11 +41,11 @@ Mean stacking is chosen as the baseline for its simplicity and predictable behav
 
 ### Actor Isolation
 
-`ImageStacker` is declared as an `actor` to prevent data races:
+`ImageStacker` is declared as an `actor` to prevent data races, and is consumed through `RunStackingUseCase`:
 
 ```swift
-actor ImageStacker {
-    func stackImages(_ images: [UIImage]) async -> UIImage?
+actor ImageStacker: StackingProcessor {
+    func process(_ request: StackingRequest) async throws -> StackingResult
 }
 ```
 

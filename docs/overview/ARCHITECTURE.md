@@ -63,88 +63,88 @@ All long-running operations (capture, stacking, file I/O) use Swift concurrency:
 ### Layer Separation
 
 ```
-┌─────────────────────────────────────┐
-│  App Layer (StakkaApp, ContentView) │
-├─────────────────────────────────────┤
-│  Features (Camera, Library, Map)    │
-├─────────────────────────────────────┤
-│  Core (ImageStacking, Models, DS)   │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  App (StakkaApp, Root, Composition)         │
+├─────────────────────────────────────────────┤
+│  Domains/*/Presentation                     │
+├─────────────────────────────────────────────┤
+│  Domains/*/Application                      │
+├─────────────────────────────────────────────┤
+│  Domains/*/Domain                           │
+├─────────────────────────────────────────────┤
+│  Domains/*/Infrastructure + Platform/*      │
+└─────────────────────────────────────────────┘
 ```
 
 **App Layer**
 - Tab navigation
+- Dependency composition via `AppContainer`
 - Dark mode enforcement
-- Global color scheme
 
-**Features Layer**
-- Self-contained feature modules
-- Each has View + ViewModel
-- No cross-feature dependencies
+**Domain Layer**
+- Business capabilities are grouped by domain: `DarkSky`, `Capture`, `Stacking`, `Library`, `Session`
+- Each domain can contain `Presentation`, `Application`, `Domain`, and `Infrastructure`
+- Shared business capabilities (for example stacking) are reused through use cases and protocols instead of direct feature-to-feature calls
 
-**Core Layer**
-- Shared utilities
-- Design system tokens
-- Image processing algorithms
-- Data models
+**Platform Layer**
+- Design system tokens and shared view modifiers
+- Shared lightweight utility types
+- Cross-domain support services
 
-### Feature Module Pattern
+### Domain Module Pattern
 
-Each feature follows MVVM:
+Each business domain follows this shape:
 
 ```
-Feature/
-├── {Feature}View.swift          # SwiftUI view
-├── {Feature}ViewModel.swift     # @MainActor observable state
-├── {Feature}ControlsView.swift  # Subviews (optional)
-└── Components/                  # Reusable components (optional)
+Domains/{Domain}/
+├── Presentation/                # SwiftUI views + view models
+├── Application/                 # Use cases / orchestration
+├── Domain/                      # Entities, value objects, protocols
+└── Infrastructure/              # Framework adapters / platform IO
 ```
 
-ViewModels:
-- Marked `@MainActor` for UI safety
-- Use `@Published` for reactive state
-- Contain business logic
-- Manage async operations
+Presentation:
+- `View` and `ViewModel`
+- UI state and transitions
+- No direct platform framework setup beyond rendering
 
-Views:
-- Pure SwiftUI
-- No business logic
-- Consume ViewModel via `@StateObject` or `@ObservedObject`
-- Use design system tokens exclusively
+Application:
+- Coordinates domain operations
+- Exposes task-oriented entry points such as `RunStackingUseCase`
+
+Domain:
+- Stable business models and protocols
+- Avoids view concerns
+
+Infrastructure:
+- AVFoundation, CoreImage, PhotoKit, CoreLocation, MapKit integration
+- Concrete implementations for domain protocols
 
 ## Directory Structure
 
 ```
 Stakka/
 ├── App/
-│   ├── StakkaApp.swift              # App entry, dark mode, tab setup
-│   └── ContentView.swift            # Tab navigation (Map/Camera/Library)
+│   ├── StakkaApp.swift
+│   ├── Root/
+│   │   └── ContentView.swift        # Tab navigation
+│   └── Composition/
+│       └── AppContainer.swift       # Dependency wiring
 │
-├── Features/
-│   ├── Camera/
-│   │   ├── CameraView.swift         # Camera preview + controls
-│   │   ├── CameraViewModel.swift    # Capture logic, AVFoundation
-│   │   ├── CameraControlsView.swift # Main + advanced controls
-│   │   ├── CameraSettingsView.swift # Settings sheet
-│   │   └── Components/
-│   │       ├── WheelPickerView.swift       # Reusable wheel picker
-│   │       └── AdvancedControlsMenu.swift  # Expandable menu
-│   │
-│   ├── LightPollution/
-│   │   └── LightPollutionMapView.swift  # MapKit integration
-│   │
-│   └── Library/
-│       ├── LibraryStackingView.swift    # PhotosPicker + grid
-│       └── LibraryStackingViewModel.swift
+├── Domains/
+│   ├── Capture/                     # Camera session, capture flow
+│   ├── DarkSky/                     # Map + light pollution
+│   ├── Library/                     # Photo import/export
+│   ├── Session/                     # Capture session persistence
+│   └── Stacking/                    # Shared stacking pipeline
 │
-└── Core/
-    ├── ImageStacking/
-    │   └── ImageStacker.swift       # Mean stacking algorithm (actor)
-    ├── Models/
-    │   └── Models.swift             # Shared data models
-    └── Utilities/
-        ├── DesignSystem.swift       # Colors, fonts, spacing, animations
-        └── Extensions.swift         # Swift/SwiftUI extensions
+└── Platform/
+    ├── DesignSystem/
+    │   ├── DesignSystem.swift
+    │   └── Extensions.swift
+    └── SharedKernel/
+        ├── AppError.swift
+        └── ProgressValue.swift
 ```
 
 ## Core Subsystems

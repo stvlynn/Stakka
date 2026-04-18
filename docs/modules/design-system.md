@@ -5,8 +5,9 @@ Stakka uses a centralized design system defined in `Core/Utilities/DesignSystem.
 ## File
 
 ```
-Core/Utilities/
-└── DesignSystem.swift    # All tokens and modifiers
+Platform/DesignSystem/
+├── DesignSystem.swift    # All tokens and modifiers
+└── Extensions.swift      # Shared Swift / Combine helpers
 ```
 
 ## Color Palette

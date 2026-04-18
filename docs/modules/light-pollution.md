@@ -5,8 +5,24 @@ The light pollution module helps users find dark sky observation sites. It combi
 ## Files
 
 ```
-Features/LightPollution/
-└── LightPollutionMapView.swift    # View + info card
+Domains/DarkSky/
+├── Presentation/
+│   ├── DarkSkyMapView.swift
+│   ├── DarkSkyViewModel.swift
+│   └── Components/
+│       └── DarkSkyInfoCard.swift
+├── Application/
+│   ├── CenterOnUserLocationUseCase.swift
+│   └── FetchPollutionAtLocationUseCase.swift
+├── Domain/
+│   ├── BortleLevel.swift
+│   ├── DarkSkyRepository.swift
+│   └── LightPollution.swift
+└── Infrastructure/
+    ├── Location/
+    │   └── CoreLocationService.swift
+    └── Remote/
+        └── MockDarkSkyRepository.swift
 ```
 
 ## Components

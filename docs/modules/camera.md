@@ -5,14 +5,25 @@ The camera module handles multi-exposure stacking photography. It manages AVFoun
 ## Components
 
 ```
-Features/Camera/
-├── CameraView.swift              # Root view
-├── CameraViewModel.swift         # Session management + state
-├── CameraControlsView.swift      # Control orchestration + picker overlays
-├── CameraSettingsView.swift      # Settings sheet
-└── Components/
-    ├── AdvancedControlsMenu.swift # Primary + advanced control bar
-    └── WheelPickerView.swift      # Generic wheel picker overlay
+Domains/Capture/
+├── Presentation/
+│   ├── CameraView.swift
+│   ├── CameraViewModel.swift
+│   ├── CameraControlsView.swift
+│   ├── CameraSettingsView.swift
+│   └── Components/
+│       ├── AdvancedControlsMenu.swift
+│       └── WheelPickerView.swift
+├── Application/
+│   ├── PrepareCameraSessionUseCase.swift
+│   ├── StartCaptureSequenceUseCase.swift
+│   └── StopCaptureSequenceUseCase.swift
+├── Domain/
+│   └── CaptureTypes.swift
+└── Infrastructure/
+    └── AVFoundation/
+        ├── AVCaptureSessionRepository.swift
+        └── CameraPermissionService.swift
 ```
 
 ## CameraViewModel
@@ -54,14 +65,12 @@ class CameraViewModel: ObservableObject {
 ### Capture Sequence
 
 ```
-startStackingCapture()
-    → sets isCapturing = true
-    → Task { await captureSequence() }
-        → for i in 0..<numberOfShots:
-            → capturePhoto()
-            → updates captureProgress
-            → sleeps intervalBetweenShots
-    → sets isCapturing = false
+CameraViewModel.startStackingCapture()
+    → StartCaptureSequenceUseCase.execute(settings:)
+        → CameraDeviceRepository.capturePhoto()
+        → updates captureProgress
+        → sleeps intervalBetweenShots
+    → PersistSessionUseCase.execute()
 ```
 
 ### Known Limitations

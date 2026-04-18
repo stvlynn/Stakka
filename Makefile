@@ -14,7 +14,7 @@ CONFIGURATION ?= Debug
 DESTINATION ?= generic/platform=iOS Simulator
 DERIVED_DATA ?= $(ROOT)/.derivedData
 
-.PHONY: help check-tools generate regenerate open build build-debug build-release clean project-clean derived-data-clean show-destinations show-settings
+.PHONY: help check check-tools generate regenerate open build build-debug build-release clean project-clean derived-data-clean show-destinations show-settings
 
 -include Makefile.local
 
@@ -33,7 +33,16 @@ check-tools: ## Verify required local tools are installed
 	@command -v $(XCODEGEN) >/dev/null 2>&1 || { echo "xcodegen not found. Install with 'brew install xcodegen'."; exit 1; }
 	@command -v $(XCODEBUILD) >/dev/null 2>&1 || { echo "xcodebuild not found. Install Xcode command line tools."; exit 1; }
 
+check: check-tools ## Run the standard local verification pass
+	@if command -v swiftlint >/dev/null 2>&1; then \
+		cd "$(ROOT)" && swiftlint; \
+	else \
+		echo "swiftlint not installed; skipping lint"; \
+	fi
+	$(MAKE) build-debug DESTINATION='generic/platform=iOS Simulator'
+
 generate: check-tools ## Generate Stakka.xcodeproj from project.yml
+	rm -rf "$(ROOT)/Stakka/Stakka.xcodeproj"
 	cd "$(ROOT)" && $(XCODEGEN) generate
 
 regenerate: generate ## Alias for generate

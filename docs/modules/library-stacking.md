@@ -5,9 +5,22 @@ The library stacking module allows users to select existing photos and combine t
 ## Files
 
 ```
-Features/Library/
-├── LibraryStackingView.swift          # Main view
-└── LibraryStackingViewModel.swift     # State + operations
+Domains/Library/
+├── Presentation/
+│   ├── LibraryStackingView.swift
+│   ├── LibraryStackingViewModel.swift
+│   └── Components/
+│       ├── PhotoGridView.swift
+│       └── StackedResultCard.swift
+├── Application/
+│   ├── ImportPhotosUseCase.swift
+│   └── ExportStackedImageUseCase.swift
+├── Domain/
+│   ├── ImportedImage.swift
+│   └── PhotoLibraryRepository.swift
+└── Infrastructure/
+    └── PhotoKit/
+        └── SystemPhotoLibraryRepository.swift
 ```
 
 ## LibraryStackingViewModel
@@ -16,7 +29,7 @@ Features/Library/
 @MainActor
 class LibraryStackingViewModel: ObservableObject {
     @Published var selectedItems: [PhotosPickerItem] = []
-    @Published var selectedImages: [UIImage] = []
+    @Published var selectedImages: [ImportedImage] = []
     @Published var isStacking: Bool = false
     @Published var stackedImage: UIImage? = nil
 }
