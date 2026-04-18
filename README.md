@@ -85,7 +85,7 @@ brew install xcodegen
 
 # Clone and setup
 git clone https://github.com/stvlynn/Stakka.git
-cd stakka/Stakka
+cd Stakka
 xcodegen generate
 
 # Open in Xcode

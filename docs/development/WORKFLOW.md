@@ -16,7 +16,7 @@ brew install xcodegen
 ```bash
 # 1. Clone the repository
 git clone https://github.com/stvlynn/Stakka.git
-cd stakka/Stakka
+cd Stakka
 
 # 2. Generate the Xcode project
 xcodegen generate
@@ -32,7 +32,6 @@ The `.xcodeproj` is not committed. Always regenerate it after pulling changes th
 ### After pulling changes
 
 ```bash
-cd Stakka
 xcodegen generate
 ```
 
@@ -151,7 +150,6 @@ brew install xcodegen
 ### Build fails after pull
 
 ```bash
-cd Stakka
 xcodegen generate
 ```
 
