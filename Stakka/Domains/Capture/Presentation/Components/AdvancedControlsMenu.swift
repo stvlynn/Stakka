@@ -19,16 +19,17 @@ struct AdvancedControlsMenu: View {
         .padding(Spacing.lg)
         .background(
             RoundedRectangle(cornerRadius: CornerRadius.xxl, style: .continuous)
-                .fill(Color.spaceSurface.opacity(0.95))
+                .fill(Color.spaceSurface.opacity(0.97))
                 .overlay(
                     RoundedRectangle(cornerRadius: CornerRadius.xxl, style: .continuous)
-                        .stroke(Color.starWhite.opacity(0.1), lineWidth: 1)
+                        .stroke(Color.starWhite.opacity(0.12), lineWidth: 1)
                 )
         )
         .background(
             RoundedRectangle(cornerRadius: CornerRadius.xxl, style: .continuous)
                 .fill(.ultraThinMaterial)
         )
+        .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: -4)
         .gesture(
             DragGesture()
                 .onEnded { value in
@@ -47,14 +48,14 @@ struct AdvancedControlsMenu: View {
 
     private var dragIndicator: some View {
         RoundedRectangle(cornerRadius: 3, style: .continuous)
-            .fill(Color.textTertiary.opacity(0.5))
-            .frame(width: 36, height: 5)
+            .fill(Color.textTertiary.opacity(0.6))
+            .frame(width: 40, height: 5)
             .padding(.bottom, Spacing.xs)
     }
 
     private var advancedControls: some View {
         VStack(spacing: Spacing.md) {
-            HStack(spacing: Spacing.lg) {
+            HStack(spacing: Spacing.sm) {
                 advancedControlButton(
                     icon: "camera.aperture",
                     label: L10n.Camera.aperture,
@@ -72,7 +73,7 @@ struct AdvancedControlsMenu: View {
                 }
             }
 
-            HStack(spacing: Spacing.lg) {
+            HStack(spacing: Spacing.sm) {
                 advancedControlButton(
                     icon: "camera.metering.multispot",
                     label: L10n.Camera.zoom,
@@ -126,7 +127,7 @@ struct AdvancedControlsMenu: View {
         Button(action: action) {
             VStack(spacing: Spacing.xs) {
                 Text(value)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .font(.system(size: 22, weight: .semibold, design: .monospaced))
                     .foregroundStyle(isActive ? Color.cosmicBlue : Color.starWhite)
                     .monospacedDigit()
 
@@ -134,7 +135,12 @@ struct AdvancedControlsMenu: View {
                     .font(.system(size: 14))
                     .foregroundStyle(isActive ? Color.cosmicBlue : Color.textTertiary)
             }
-            .frame(width: 70)
+            .frame(width: 70, height: Spacing.touchTarget)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.sm, style: .continuous)
+                    .fill(isActive ? Color.cosmicBlue.opacity(0.15) : Color.clear)
+            )
+            .contentShape(Rectangle())
             .scaleEffect(isActive ? 1.05 : 1.0)
             .animation(AnimationPreset.spring, value: isActive)
         }
@@ -150,10 +156,10 @@ struct AdvancedControlsMenu: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
-                        .font(.system(size: 11))
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .foregroundStyle(Color.textTertiary)
                     Text(value)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
                         .foregroundStyle(Color.starWhite)
                         .monospacedDigit()
                 }
@@ -161,14 +167,15 @@ struct AdvancedControlsMenu: View {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.textTertiary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.textMuted)
             }
             .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
-            .background(Color.spaceSurfaceElevated.opacity(0.6))
+            .frame(maxWidth: .infinity, minHeight: Spacing.touchTarget)
+            .background(Color.spaceSurfaceElevated.opacity(0.5))
             .continuousCorners(CornerRadius.md)
         }
+        .buttonStyle(.plain)
     }
 
     private var captureButton: some View {
@@ -183,18 +190,26 @@ struct AdvancedControlsMenu: View {
         } label: {
             ZStack {
                 Circle()
-                    .stroke(viewModel.isCapturing ? Color.galaxyPink : Color.cosmicBlue, lineWidth: 4)
+                    .stroke(viewModel.isCapturing ? Color.galaxyPink : Color.cosmicBlue, lineWidth: 3.5)
                     .frame(width: 76, height: 76)
-                    .glow(color: viewModel.isCapturing ? .galaxyPink : .cosmicBlue, radius: 8)
+                    .glow(color: viewModel.isCapturing ? .galaxyPink : .cosmicBlue, radius: 10)
 
                 Circle()
-                    .fill(viewModel.isCapturing ? Color.galaxyPink : Color.cosmicBlue)
+                    .fill(
+                        LinearGradient(
+                            colors: viewModel.isCapturing
+                                ? [Color.galaxyPink, Color.galaxyPink.opacity(0.8)]
+                                : [Color.cosmicBlue, Color.cosmicBlue.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 64, height: 64)
 
                 if viewModel.isCapturing {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color.starWhite)
-                        .frame(width: 24, height: 24)
+                        .frame(width: 22, height: 22)
                 } else {
                     Image(systemName: "sparkles")
                         .font(.system(size: 24, weight: .semibold))

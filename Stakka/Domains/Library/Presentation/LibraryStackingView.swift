@@ -190,7 +190,7 @@ struct LibraryStackingView: View {
                 actionButton(
                     title: L10n.Library.analyze,
                     symbol: "viewfinder",
-                    tint: .spaceSurfaceElevated,
+                    isPrimary: false,
                     isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.isEmpty,
                     action: viewModel.analyze
                 )
@@ -198,7 +198,7 @@ struct LibraryStackingView: View {
                 actionButton(
                     title: L10n.Library.register,
                     symbol: "scope",
-                    tint: .spaceSurfaceElevated,
+                    isPrimary: false,
                     isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
                     action: viewModel.register
                 )
@@ -206,7 +206,7 @@ struct LibraryStackingView: View {
                 actionButton(
                     title: L10n.Library.stack,
                     symbol: "square.stack.3d.up.fill",
-                    tint: .cosmicBlue,
+                    isPrimary: true,
                     isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
                     action: viewModel.stack
                 )
@@ -214,8 +214,9 @@ struct LibraryStackingView: View {
 
             Text(actionHint)
                 .font(.stakkaSmall)
-                .foregroundStyle(Color.textSecondary)
+                .foregroundStyle(Color.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineSpacing(2)
         }
         .padding(Spacing.md)
         .glassCard()
@@ -224,43 +225,68 @@ struct LibraryStackingView: View {
     private func actionButton(
         title: String,
         symbol: String,
-        tint: Color,
+        isPrimary: Bool,
         isDisabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack {
+            VStack(spacing: Spacing.xs) {
                 Image(systemName: symbol)
+                    .font(.system(size: 18, weight: .semibold))
                 Text(title)
+                    .font(.stakkaSmall)
+                    .fontWeight(.semibold)
             }
-            .font(.stakkaCaption)
-            .fontWeight(.semibold)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.md)
+            .frame(minHeight: 56)
+            .foregroundStyle(isDisabled ? Color.textMuted : (isPrimary ? Color.starWhite : Color.starWhite))
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(
+                        isDisabled
+                            ? Color.spaceSurfaceElevated.opacity(0.4)
+                            : (isPrimary ? Color.cosmicBlue : Color.spaceSurfaceElevated)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                            .stroke(
+                                isDisabled ? Color.clear : (isPrimary ? Color.cosmicBlue.opacity(0.5) : Color.starWhite.opacity(0.08)),
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .shadow(
+                color: isPrimary && !isDisabled ? Color.cosmicBlue.opacity(0.35) : .clear,
+                radius: 8, x: 0, y: 4
+            )
         }
-        .buttonStyle(.borderedProminent)
-        .tint(tint)
         .disabled(isDisabled)
+        .animation(AnimationPreset.transition, value: isDisabled)
     }
 
     private func errorCard(message: String) -> some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 20))
                 .foregroundStyle(Color.galaxyPink)
 
             Text(message)
                 .font(.stakkaCaption)
                 .foregroundStyle(Color.starWhite)
+                .lineSpacing(2)
 
             Spacer()
         }
         .padding(Spacing.md)
-        .background(Color.galaxyPink.opacity(0.12))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                .stroke(Color.galaxyPink.opacity(0.2), lineWidth: 1)
+                .fill(Color.galaxyPink.opacity(0.15))
+                .overlay(
+                    RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
+                        .stroke(Color.galaxyPink.opacity(0.3), lineWidth: 1)
+                )
         )
-        .continuousCorners(CornerRadius.lg)
+        .shadow(color: Color.galaxyPink.opacity(0.2), radius: 8, x: 0, y: 2)
     }
 
     private var actionHint: String {
