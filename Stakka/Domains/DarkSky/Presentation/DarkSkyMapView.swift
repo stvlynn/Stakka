@@ -23,7 +23,7 @@ struct DarkSkyMapView: View {
                             .tint(Color.cosmicBlue)
                     }
                 }
-                .mapStyle(.standard(elevation: .realistic))
+                .mapStyle(.standard(elevation: .flat))
                 .preferredColorScheme(.dark)
 
                 VStack {
