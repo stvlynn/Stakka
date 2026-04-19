@@ -42,7 +42,7 @@ struct CometReviewStatusCard: View {
             Button(action: onReview) {
                 HStack {
                     Image(systemName: "viewfinder.circle.fill")
-                    Text(needsReviewCount == 0 ? "查看彗星标定" : "检查彗星标定")
+                    Text(L10n.Library.cometReviewAction(needsReviewCount: needsReviewCount))
                 }
                 .font(.stakkaCaption)
                 .fontWeight(.semibold)

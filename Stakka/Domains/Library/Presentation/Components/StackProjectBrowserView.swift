@@ -29,11 +29,11 @@ struct StackProjectBrowserView: View {
                     }
                 }
             }
-            .navigationTitle("工程")
+            .navigationTitle(L10n.Library.browserTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button("新建") {
+                    Button(L10n.Common.new) {
                         onCreate()
                         dismiss()
                     }
@@ -48,11 +48,11 @@ struct StackProjectBrowserView: View {
                 .font(.system(size: 32))
                 .foregroundStyle(Color.textTertiary)
 
-            Text("还没有已保存的工程")
+            Text(L10n.Library.browserEmpty)
                 .font(.stakkaHeadline)
                 .foregroundStyle(Color.starWhite)
 
-            Button("创建新工程") {
+            Button(L10n.Library.createProject) {
                 onCreate()
                 dismiss()
             }
@@ -78,7 +78,7 @@ struct StackProjectBrowserView: View {
                 Spacer()
 
                 if currentProjectID == summary.id {
-                    Text("当前")
+                    Text(L10n.Common.current)
                         .font(.stakkaSmall)
                         .foregroundStyle(Color.cosmicBlue)
                         .padding(.horizontal, Spacing.sm)
@@ -97,20 +97,20 @@ struct StackProjectBrowserView: View {
             }
 
             HStack(spacing: Spacing.sm) {
-                Button("打开") {
+                Button(L10n.Common.open) {
                     onOpen(summary.id)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.cosmicBlue)
 
-                Button("复制") {
+                Button(L10n.Common.duplicate) {
                     onDuplicate(summary.id)
                     dismiss()
                 }
                 .buttonStyle(.bordered)
 
-                Button("删除") {
+                Button(L10n.Common.delete) {
                     onDelete(summary.id)
                 }
                 .buttonStyle(.bordered)

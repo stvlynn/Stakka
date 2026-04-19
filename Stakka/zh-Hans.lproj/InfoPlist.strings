@@ -1,0 +1,3 @@
+"NSCameraUsageDescription" = "Stakka 需要访问相机以拍摄天文堆栈素材";
+"NSPhotoLibraryUsageDescription" = "Stakka 需要访问照片图库以堆栈你的图像";
+"NSLocationWhenInUseUsageDescription" = "Stakka 需要访问你的位置以显示光污染数据";

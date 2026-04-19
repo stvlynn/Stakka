@@ -8,9 +8,9 @@ enum AppError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unavailable:
-            return "当前功能不可用"
+            return L10n.Error.unavailable
         case .permissionDenied:
-            return "权限被拒绝"
+            return L10n.Error.permissionDenied
         case .operationFailed(let message):
             return message
         }

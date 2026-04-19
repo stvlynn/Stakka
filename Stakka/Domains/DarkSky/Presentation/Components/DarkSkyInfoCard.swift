@@ -11,7 +11,7 @@ struct DarkSkyInfoCard: View {
                     .font(.title3)
                     .breathingGlow(color: .cosmicBlue, radius: 4)
 
-                Text("光污染等级")
+                Text(L10n.DarkSky.cardTitle)
                     .font(.stakkaHeadline)
                     .foregroundStyle(Color.starWhite)
 
@@ -31,7 +31,7 @@ struct DarkSkyInfoCard: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color.textTertiary)
 
-                    Text("\(reading.coordinate.latitude, specifier: "%.4f")°")
+                    Text(L10nFormat.coordinate(reading.coordinate.latitude))
                         .font(.stakkaCaption)
                         .foregroundStyle(Color.textSecondary)
                         .fontWeight(.medium)
@@ -43,7 +43,7 @@ struct DarkSkyInfoCard: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color.textTertiary)
 
-                    Text("\(reading.coordinate.longitude, specifier: "%.4f")°")
+                    Text(L10nFormat.coordinate(reading.coordinate.longitude))
                         .font(.stakkaCaption)
                         .foregroundStyle(Color.textSecondary)
                         .fontWeight(.medium)

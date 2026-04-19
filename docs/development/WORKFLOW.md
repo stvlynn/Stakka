@@ -73,6 +73,7 @@ Current high-value entry points:
 | Camera capture | `Domains/Capture/Presentation/CameraViewModel.swift` |
 | Light-pollution map | `Domains/DarkSky/Presentation/DarkSkyMapView.swift` |
 | Design tokens | `Platform/DesignSystem/DesignSystem.swift` |
+| Localization copy | `Platform/SharedKernel/L10n.swift` + `Stakka/zh-Hans.lproj/Localizable.strings` |
 
 ## Adding Files
 
@@ -81,6 +82,13 @@ Current high-value entry points:
 3. Rebuild
 
 XcodeGen picks up files by directory inclusion. Missing files in Xcode usually mean the project was not regenerated.
+
+For localization work:
+
+- UI copy should route through `Platform/SharedKernel/L10n.swift`
+- Locale-sensitive formatting should route through `Platform/SharedKernel/L10nFormat.swift`
+- Translations belong in `*.lproj/Localizable.strings`
+- Permission copy belongs in `*.lproj/InfoPlist.strings`
 
 ## Quality Gates
 

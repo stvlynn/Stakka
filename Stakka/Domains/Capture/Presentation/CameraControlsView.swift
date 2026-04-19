@@ -19,10 +19,10 @@ struct CameraControlsView: View {
 
             if viewModel.showExposurePicker {
                 WheelPickerOverlay(
-                    title: "曝光时间",
+                    title: L10n.Camera.exposureTime,
                     items: exposureOptions,
                     selectedItem: viewModel.exposureTime,
-                    displayText: { "\(String(format: "%.1f", $0))s" },
+                    displayText: { L10nFormat.seconds($0) },
                     onSelect: { viewModel.exposureTime = $0 },
                     onDismiss: { viewModel.showExposurePicker = false }
                 )
@@ -30,7 +30,7 @@ struct CameraControlsView: View {
 
             if viewModel.showShotsPicker {
                 WheelPickerOverlay(
-                    title: "拍摄数量",
+                    title: L10n.Camera.shotCountPicker,
                     items: shotsOptions,
                     selectedItem: viewModel.numberOfShots,
                     displayText: { "\($0)" },
@@ -41,7 +41,7 @@ struct CameraControlsView: View {
 
             if viewModel.showAperturePicker {
                 WheelPickerOverlay(
-                    title: "光圈",
+                    title: L10n.Camera.aperture,
                     items: apertureOptions,
                     selectedItem: viewModel.aperture,
                     displayText: { $0 },
@@ -52,7 +52,7 @@ struct CameraControlsView: View {
 
             if viewModel.showShutterPicker {
                 WheelPickerOverlay(
-                    title: "快门速度",
+                    title: L10n.Camera.shutterSpeed,
                     items: shutterOptions,
                     selectedItem: viewModel.shutterSpeed,
                     displayText: { $0 },
@@ -63,7 +63,7 @@ struct CameraControlsView: View {
 
             if viewModel.showZoomPicker {
                 WheelPickerOverlay(
-                    title: "变焦倍数",
+                    title: L10n.Camera.zoomFactor,
                     items: zoomOptions,
                     selectedItem: viewModel.zoomLevel,
                     displayText: { $0 },
@@ -74,7 +74,7 @@ struct CameraControlsView: View {
 
             if viewModel.showModePicker {
                 WheelPickerOverlay(
-                    title: "拍摄档位",
+                    title: L10n.Camera.shootingMode,
                     items: modeOptions,
                     selectedItem: viewModel.shootingMode,
                     displayText: { $0 },
@@ -91,7 +91,7 @@ struct CameraControlsView: View {
                 .tint(.cosmicBlue)
                 .breathingGlow(color: .cosmicBlue, radius: 4)
 
-            Text("\(Int(viewModel.captureProgress * Double(viewModel.numberOfShots)))/\(viewModel.numberOfShots)")
+            Text(L10nFormat.ratio(Int(viewModel.captureProgress * Double(viewModel.numberOfShots)), viewModel.numberOfShots))
                 .font(.stakkaCaption)
                 .foregroundStyle(Color.textSecondary)
                 .monospacedDigit()

@@ -19,13 +19,13 @@ struct CameraSettingsView: View {
                     .padding(Spacing.md)
                 }
             }
-            .navigationTitle("拍摄设置")
+            .navigationTitle(L10n.Camera.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button(L10n.Common.done) { dismiss() }
                         .foregroundStyle(Color.cosmicBlue)
                         .fontWeight(.semibold)
                 }
@@ -36,12 +36,12 @@ struct CameraSettingsView: View {
 
     private var exposureSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Label("曝光", systemImage: "timer")
+            Label(L10n.Camera.exposureSection, systemImage: "timer")
                 .font(.stakkaHeadline)
                 .foregroundStyle(Color.starWhite)
 
             stepRow(
-                valueText: String(format: "%.1fs", viewModel.exposureTime),
+                valueText: L10nFormat.seconds(viewModel.exposureTime),
                 decrement: { viewModel.updateExposure(by: -0.1) },
                 increment: { viewModel.updateExposure(by: 0.1) }
             )
@@ -53,13 +53,13 @@ struct CameraSettingsView: View {
 
     private var stackingSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Label("堆栈", systemImage: "square.stack.3d.up.fill")
+            Label(L10n.Camera.stackingSection, systemImage: "square.stack.3d.up.fill")
                 .font(.stakkaHeadline)
                 .foregroundStyle(Color.starWhite)
 
             VStack(spacing: Spacing.md) {
                 HStack {
-                    Text("拍摄数量")
+                    Text(L10n.Camera.shotCount)
                         .font(.stakkaBody)
                         .foregroundStyle(Color.textSecondary)
                     Spacer()
@@ -73,11 +73,11 @@ struct CameraSettingsView: View {
                 Divider().overlay(Color.spaceSurfaceElevated)
 
                 HStack {
-                    Text("间隔")
+                    Text(L10n.Camera.interval)
                         .font(.stakkaBody)
                         .foregroundStyle(Color.textSecondary)
                     Spacer()
-                    Text(String(format: "%.1fs", viewModel.intervalBetweenShots))
+                    Text(L10nFormat.seconds(viewModel.intervalBetweenShots))
                         .font(.stakkaCaption)
                         .foregroundStyle(Color.cosmicBlue)
                         .fontWeight(.semibold)
@@ -85,7 +85,7 @@ struct CameraSettingsView: View {
                 }
 
                 stepRow(
-                    valueText: String(format: "%.1fs", viewModel.intervalBetweenShots),
+                    valueText: L10nFormat.seconds(viewModel.intervalBetweenShots),
                     decrement: { viewModel.updateInterval(by: -0.1) },
                     increment: { viewModel.updateInterval(by: 0.1) }
                 )
@@ -98,7 +98,7 @@ struct CameraSettingsView: View {
 
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Label("总览", systemImage: "info.circle.fill")
+            Label(L10n.Camera.summarySection, systemImage: "info.circle.fill")
                 .font(.stakkaHeadline)
                 .foregroundStyle(Color.starWhite)
 
@@ -109,7 +109,7 @@ struct CameraSettingsView: View {
                     Image(systemName: "clock.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.textTertiary)
-                    Text(formatDuration(totalTime))
+                    Text(L10nFormat.duration(totalTime))
                         .font(.stakkaTitle)
                         .foregroundStyle(Color.cosmicBlue)
                         .monospacedDigit()
@@ -143,12 +143,6 @@ struct CameraSettingsView: View {
                     .stroke(Color.cosmicBlue.opacity(0.2), lineWidth: 1)
             )
         }
-    }
-
-    private func formatDuration(_ seconds: Double) -> String {
-        let mins = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return mins > 0 ? "\(mins)m \(secs)s" : "\(secs)s"
     }
 
     private func stepRow(valueText: String, decrement: @escaping () -> Void, increment: @escaping () -> Void) -> some View {

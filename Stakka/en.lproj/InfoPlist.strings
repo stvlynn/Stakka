@@ -1,0 +1,3 @@
+"NSCameraUsageDescription" = "Stakka needs camera access to capture astrophotography images";
+"NSPhotoLibraryUsageDescription" = "Stakka needs photo library access to stack your images";
+"NSLocationWhenInUseUsageDescription" = "Stakka needs your location to show light pollution data";

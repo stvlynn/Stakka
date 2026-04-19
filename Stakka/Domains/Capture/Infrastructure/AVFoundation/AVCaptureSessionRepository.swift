@@ -89,7 +89,7 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
 
         guard let data = photo.fileDataRepresentation(),
               let image = UIImage(data: data) else {
-            completion(.failure(AppError.operationFailed("照片处理失败")))
+            completion(.failure(AppError.operationFailed(L10n.Error.photoProcessingFailed)))
             return
         }
 

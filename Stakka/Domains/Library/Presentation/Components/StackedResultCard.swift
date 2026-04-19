@@ -12,7 +12,7 @@ struct StackedResultCard: View {
                     .foregroundStyle(Color.cosmicBlue)
                     .breathingGlow(color: .cosmicBlue, radius: 4)
 
-                Text("堆栈完成")
+                Text(L10n.Library.resultCompleted)
                     .font(.stakkaHeadline)
                     .foregroundStyle(Color.starWhite)
 
@@ -59,7 +59,7 @@ struct StackedResultCard: View {
                 Button(action: onSave) {
                     HStack {
                         Image(systemName: "square.and.arrow.down.fill")
-                        Text("保存")
+                        Text(L10n.Common.save)
                     }
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
@@ -72,7 +72,7 @@ struct StackedResultCard: View {
                 Button(action: onExportTIFF) {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
-                        Text("TIFF")
+                        Text(L10n.Library.exportTIFF)
                     }
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)

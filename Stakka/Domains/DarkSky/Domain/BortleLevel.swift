@@ -12,17 +12,7 @@ enum BortleLevel: Int, CaseIterable, Codable, Sendable {
     case nine
 
     var title: String {
-        switch self {
-        case .one: return "优秀暗空"
-        case .two: return "极佳暗空"
-        case .three: return "乡村暗空"
-        case .four: return "城郊过渡"
-        case .five: return "城郊天空"
-        case .six: return "明亮城郊"
-        case .seven: return "近城区"
-        case .eight: return "城市天空"
-        case .nine: return "市中心"
-        }
+        L10n.DarkSky.bortleTitle(level: rawValue)
     }
 
     var color: Color {

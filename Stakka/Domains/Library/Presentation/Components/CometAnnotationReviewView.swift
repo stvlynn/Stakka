@@ -25,11 +25,11 @@ struct CometAnnotationReviewView: View {
                     .padding(Spacing.md)
                 }
             }
-            .navigationTitle("彗星标定")
+            .navigationTitle(L10n.Library.reviewTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("完成") {
+                    Button(L10n.Common.done) {
                         dismiss()
                     }
                 }
@@ -59,7 +59,7 @@ struct CometAnnotationReviewView: View {
                         .foregroundStyle(Color.starWhite)
 
                     if let annotation {
-                        Text(annotation.requiresReview ? "需要检查" : "已确认")
+                        Text(annotation.requiresReview ? L10n.Library.reviewNeedsCheck : L10n.Library.reviewConfirmed)
                             .font(.stakkaCaption)
                             .foregroundStyle(annotation.requiresReview ? Color.galaxyPink : Color.cosmicBlue)
                     }
@@ -67,7 +67,7 @@ struct CometAnnotationReviewView: View {
 
                 Spacer()
 
-                Text("\(currentIndex + 1)/\(frames.count)")
+                Text(L10nFormat.ratio(currentIndex + 1, frames.count))
                     .font(.stakkaCaption)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
@@ -75,8 +75,8 @@ struct CometAnnotationReviewView: View {
 
             if let annotation {
                 HStack(spacing: Spacing.sm) {
-                    metricChip(symbol: "scope", value: String(format: "%.2f", annotation.confidence))
-                    metricChip(symbol: "hand.point.up.left.fill", value: annotation.isUserAdjusted ? "手工" : "自动")
+                    metricChip(symbol: "scope", value: L10nFormat.decimal(annotation.confidence, digits: 2))
+                    metricChip(symbol: "hand.point.up.left.fill", value: annotation.isUserAdjusted ? L10n.Library.reviewManual : L10n.Library.reviewAuto)
                 }
             }
         }
@@ -105,7 +105,7 @@ struct CometAnnotationReviewView: View {
                 } label: {
                     HStack {
                         Image(systemName: "wand.and.stars")
-                        Text("使用自动估计")
+                        Text(L10n.Library.useEstimated)
                     }
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
@@ -123,14 +123,14 @@ struct CometAnnotationReviewView: View {
             Button {
                 currentIndex = max(0, currentIndex - 1)
             } label: {
-                controlLabel("上一张", symbol: "chevron.left")
+                controlLabel(L10n.Library.previousFrame, symbol: "chevron.left")
             }
             .disabled(currentIndex == 0)
 
             Button {
                 currentIndex = min(frames.count - 1, currentIndex + 1)
             } label: {
-                controlLabel("下一张", symbol: "chevron.right")
+                controlLabel(L10n.Library.nextFrame, symbol: "chevron.right")
             }
             .disabled(currentIndex == frames.count - 1)
         }

@@ -57,7 +57,7 @@ struct SystemPhotoLibraryRepository: PhotoLibraryRepository {
                 } else if success {
                     continuation.resume(returning: ())
                 } else {
-                    continuation.resume(throwing: AppError.operationFailed("保存失败"))
+                    continuation.resume(throwing: AppError.operationFailed(L10n.Error.saveFailed))
                 }
             }
         }

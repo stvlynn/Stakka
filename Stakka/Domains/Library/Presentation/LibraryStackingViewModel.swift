@@ -14,15 +14,15 @@ final class LibraryStackingViewModel: ObservableObject {
         var title: String {
             switch self {
             case .idle:
-                return "就绪"
+                return L10n.Library.ready
             case .analyzing:
-                return "分析"
+                return L10n.Library.analyze
             case .registering:
-                return "配准"
+                return L10n.Library.register
             case .stacking:
-                return "堆栈"
+                return L10n.Library.stack
             case .saving:
-                return "保存"
+                return L10n.Common.save
             }
         }
 
@@ -171,9 +171,7 @@ final class LibraryStackingViewModel: ObservableObject {
     }
 
     func createNewProject() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM-dd HH:mm"
-        project = StackingProject(title: "新工程 \(formatter.string(from: Date()))")
+        project = StackingProject(title: L10n.Project.newTitle(at: Date()))
         result = nil
         errorMessage = nil
         pendingTIFFExport = nil
@@ -344,7 +342,7 @@ final class LibraryStackingViewModel: ObservableObject {
     }
 
     func openCometReviewPrerequisiteMessage() {
-        errorMessage = "先运行配准，系统会自动估计彗星位置"
+        errorMessage = L10n.Library.cometReviewPrerequisite
     }
 
     func clearPreparedTIFFExport() {

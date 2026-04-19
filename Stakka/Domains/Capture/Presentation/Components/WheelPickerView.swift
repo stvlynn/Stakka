@@ -58,6 +58,7 @@ struct WheelPickerOverlay<T: Hashable>: View {
                                 .font(.system(size: 20))
                                 .foregroundStyle(Color.textTertiary)
                         }
+                        .accessibilityLabel(L10n.Accessibility.dismissPicker)
                     }
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
@@ -81,7 +82,7 @@ struct WheelPickerOverlay<T: Hashable>: View {
                             onDismiss()
                         }
                     } label: {
-                        Text("确认")
+                        Text(L10n.Common.confirm)
                             .font(.stakkaCaption)
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)

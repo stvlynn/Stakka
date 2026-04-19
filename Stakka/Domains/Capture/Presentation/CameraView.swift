@@ -37,7 +37,7 @@ struct CameraView: View {
                         .padding(.bottom, Spacing.lg)
                 }
             }
-            .navigationTitle("堆栈拍摄")
+            .navigationTitle(L10n.Camera.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -49,6 +49,7 @@ struct CameraView: View {
                         Image(systemName: "gearshape.fill")
                             .foregroundStyle(Color.starWhite)
                     }
+                    .accessibilityLabel(L10n.Accessibility.openSettings)
                 }
             }
             .sheet(isPresented: $viewModel.showSettings) {
@@ -66,7 +67,7 @@ struct CameraView: View {
                 .foregroundStyle(Color.cosmicBlue)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("已写入最近工程")
+                Text(L10n.Camera.recentProjectSaved)
                     .font(.stakkaCaption)
                     .foregroundStyle(Color.starWhite)
                 Text(title)

@@ -48,6 +48,7 @@ struct StackFrameSectionView: View {
                         .continuousCorners(CornerRadius.md)
                 }
                 .disabled(isWorking)
+                .accessibilityLabel(L10n.Accessibility.importPhotos(kind: kind.title))
 
                 Button {
                     isPresentingFileImporter = true
@@ -61,6 +62,7 @@ struct StackFrameSectionView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isWorking)
+                .accessibilityLabel(L10n.Accessibility.importFiles(kind: kind.title))
 
                 if !frames.isEmpty {
                     Button(action: onClear) {
@@ -73,6 +75,7 @@ struct StackFrameSectionView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(isWorking)
+                    .accessibilityLabel(L10n.Accessibility.clearFrames(kind: kind.title))
                 }
             }
 
@@ -131,7 +134,7 @@ struct StackFrameSectionView: View {
                 .font(.system(size: 24))
                 .foregroundStyle(Color.textTertiary)
 
-            Text("添加 \(kind.title)")
+            Text(L10n.Library.addFrame(kind: kind.title))
                 .font(.stakkaCaption)
                 .foregroundStyle(Color.textSecondary)
         }
@@ -173,6 +176,7 @@ private struct StackFrameThumbnailCard: View {
                                         .continuousCorners(CornerRadius.md)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(L10n.Accessibility.reviewCometAnnotation)
                             }
 
                             if showsReferenceButton {
@@ -185,6 +189,7 @@ private struct StackFrameThumbnailCard: View {
                                         .continuousCorners(CornerRadius.md)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(L10n.Accessibility.setReferenceFrame)
                             }
                         }
                         .padding(Spacing.sm)
@@ -197,6 +202,7 @@ private struct StackFrameThumbnailCard: View {
                             .foregroundStyle(frame.isEnabled ? Color.cosmicBlue : Color.textTertiary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(frame.isEnabled ? L10n.Accessibility.disableFrame : L10n.Accessibility.enableFrame)
 
                     Spacer()
 
@@ -206,6 +212,7 @@ private struct StackFrameThumbnailCard: View {
                             .foregroundStyle(Color.galaxyPink)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.Accessibility.removeFrame)
                 }
                 .padding(Spacing.sm)
             }
@@ -247,10 +254,10 @@ private struct StackFrameThumbnailCard: View {
 
     private func formatted(_ value: Double?) -> String {
         guard let value else { return "0.0" }
-        return String(format: "%.1f", value)
+        return L10nFormat.decimal(value, digits: 1)
     }
 
     private func signed(_ value: Double) -> String {
-        String(format: "%+.1f", value)
+        L10nFormat.signedDecimal(value)
     }
 }

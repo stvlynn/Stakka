@@ -8,7 +8,7 @@ struct CometModePickerView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
                 modeButton(
-                    title: "关闭",
+                    title: L10n.Common.off,
                     symbol: "moonphase.waning.crescent",
                     isSelected: selectedMode == nil
                 ) {

@@ -30,7 +30,7 @@ actor ImageStacker: StackingProcessor {
         let referenceFrame = try resolveReferenceFrame(in: analyzedProject)
         let referenceImage = referenceFrame.image.normalizedForProcessing(targetSize: referenceFrame.image.size)
         guard let referenceCGImage = referenceImage.cgImage else {
-            throw StackingError.processingFailed("参考帧无法解析")
+            throw StackingError.processingFailed(L10n.Error.referenceFrameUnreadable)
         }
 
         var frames = analyzedProject.frames
@@ -46,7 +46,7 @@ actor ImageStacker: StackingProcessor {
 
             let floatingImage = frames[index].image.normalizedForProcessing(targetSize: referenceImage.size)
             guard let floatingCGImage = floatingImage.cgImage else {
-                throw StackingError.processingFailed("Light 帧无法解析")
+                throw StackingError.processingFailed(L10n.Error.lightFrameUnreadable)
             }
 
             frames[index].registration = try register(
@@ -203,7 +203,7 @@ private extension ImageStacker {
         let sample = try LuminanceSample(image: image, maxDimension: 256)
         let pixels = sample.pixels
         guard !pixels.isEmpty else {
-            throw StackingError.processingFailed("分析数据为空")
+            throw StackingError.processingFailed(L10n.Error.emptyAnalysisData)
         }
 
         let mean = pixels.reduce(0, +) / Double(pixels.count)
@@ -341,7 +341,7 @@ private extension ImageStacker {
         try fallbackHandler.perform([fallbackRequest])
 
         guard let fallbackObservation = fallbackRequest.results?.first else {
-            throw StackingError.processingFailed("无法完成图像配准")
+            throw StackingError.processingFailed(L10n.Error.registrationFailed)
         }
 
         let transform = CGAffineTransform(
@@ -756,7 +756,7 @@ private struct LuminanceSample {
     init(image: UIImage, maxDimension: CGFloat) throws {
         let normalizedImage = image.normalizedForProcessing(maxDimension: maxDimension)
         guard let cgImage = normalizedImage.cgImage else {
-            throw StackingError.processingFailed("无法创建采样图像")
+            throw StackingError.processingFailed(L10n.Error.sampleImageFailed)
         }
 
         width = cgImage.width
@@ -948,7 +948,7 @@ private struct LinearRGBAImage {
     init(image: UIImage, targetSize: CGSize? = nil) throws {
         let preparedImage = image.normalizedForProcessing(targetSize: targetSize)
         guard let cgImage = preparedImage.cgImage else {
-            throw StackingError.processingFailed("无法解析图像像素")
+            throw StackingError.processingFailed(L10n.Error.pixelReadFailed)
         }
 
         width = cgImage.width
@@ -1122,7 +1122,7 @@ private struct LinearRGBAImage {
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ), let cgImage = context.makeImage() else {
-            throw StackingError.processingFailed("无法生成结果图像")
+            throw StackingError.processingFailed(L10n.Error.resultImageFailed)
         }
 
         return UIImage(cgImage: cgImage)
@@ -1146,7 +1146,7 @@ private struct LinearRGBAImage {
             colorSpace: colorSpace,
             options: [:]
         ) else {
-            throw StackingError.processingFailed("无法生成 TIFF 导出")
+            throw StackingError.processingFailed(L10n.Error.tiffExportFailed)
         }
 
         return data as Data
@@ -1372,7 +1372,7 @@ private extension CGImage {
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else {
-            throw StackingError.processingFailed("无法读取像素数据")
+            throw StackingError.processingFailed(L10n.Error.pixelReadFailed)
         }
 
         context.draw(self, in: CGRect(x: 0, y: 0, width: width, height: height))

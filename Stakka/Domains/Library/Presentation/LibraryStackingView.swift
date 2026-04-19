@@ -101,7 +101,7 @@ struct LibraryStackingView: View {
                     .padding(Spacing.md)
                 }
             }
-            .navigationTitle("图库工程")
+            .navigationTitle(L10n.Library.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -147,11 +147,12 @@ struct LibraryStackingView: View {
                         Image(systemName: "books.vertical")
                             .foregroundStyle(Color.starWhite)
                     }
+                    .accessibilityLabel(L10n.Accessibility.openProjects)
                 }
 
                 if !viewModel.project.frames.isEmpty {
                     ToolbarItem(placement: .primaryAction) {
-                        Button("新建") {
+                        Button(L10n.Common.new) {
                             viewModel.createNewProject()
                         }
                         .foregroundStyle(Color.galaxyPink)
@@ -169,10 +170,10 @@ struct LibraryStackingView: View {
                     .foregroundStyle(Color.cosmicBlue)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("DSS 风格工程流")
+                    Text(L10n.Library.introTitle)
                         .font(.stakkaHeadline)
                         .foregroundStyle(Color.starWhite)
-                    Text("导入五类帧，先分析，再配准，再堆栈")
+                    Text(L10n.Library.introSubtitle)
                         .font(.stakkaCaption)
                         .foregroundStyle(Color.textSecondary)
                 }
@@ -187,7 +188,7 @@ struct LibraryStackingView: View {
         VStack(spacing: Spacing.md) {
             HStack(spacing: Spacing.sm) {
                 actionButton(
-                    title: "分析",
+                    title: L10n.Library.analyze,
                     symbol: "viewfinder",
                     tint: .spaceSurfaceElevated,
                     isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.isEmpty,
@@ -195,7 +196,7 @@ struct LibraryStackingView: View {
                 )
 
                 actionButton(
-                    title: "配准",
+                    title: L10n.Library.register,
                     symbol: "scope",
                     tint: .spaceSurfaceElevated,
                     isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
@@ -203,7 +204,7 @@ struct LibraryStackingView: View {
                 )
 
                 actionButton(
-                    title: "堆栈",
+                    title: L10n.Library.stack,
                     symbol: "square.stack.3d.up.fill",
                     tint: .cosmicBlue,
                     isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
@@ -264,10 +265,10 @@ struct LibraryStackingView: View {
 
     private var actionHint: String {
         if viewModel.project.cometMode != nil {
-            return "选择彗星模式后，先配准自动估计彗星位置，再进入彗星检查。"
+            return L10n.Library.cometHint
         }
 
-        return "Light 至少 2 张，参考帧会自动选分数最高者，也可手动指定。"
+        return L10n.Library.referenceHint(lightTitle: StackFrameKind.light.title)
     }
 
     private func openCometReview(startingFrameID: UUID?) {

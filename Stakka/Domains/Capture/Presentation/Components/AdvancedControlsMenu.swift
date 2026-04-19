@@ -57,7 +57,7 @@ struct AdvancedControlsMenu: View {
             HStack(spacing: Spacing.lg) {
                 advancedControlButton(
                     icon: "camera.aperture",
-                    label: "光圈",
+                    label: L10n.Camera.aperture,
                     value: viewModel.aperture
                 ) {
                     viewModel.showAperturePicker = true
@@ -65,7 +65,7 @@ struct AdvancedControlsMenu: View {
 
                 advancedControlButton(
                     icon: "timer",
-                    label: "快门",
+                    label: L10n.Camera.shutter,
                     value: viewModel.shutterSpeed
                 ) {
                     viewModel.showShutterPicker = true
@@ -75,7 +75,7 @@ struct AdvancedControlsMenu: View {
             HStack(spacing: Spacing.lg) {
                 advancedControlButton(
                     icon: "camera.metering.multispot",
-                    label: "倍数",
+                    label: L10n.Camera.zoom,
                     value: viewModel.zoomLevel
                 ) {
                     viewModel.showZoomPicker = true
@@ -83,7 +83,7 @@ struct AdvancedControlsMenu: View {
 
                 advancedControlButton(
                     icon: "dial.medium.fill",
-                    label: "档位",
+                    label: L10n.Camera.mode,
                     value: viewModel.shootingMode
                 ) {
                     viewModel.showModePicker = true
@@ -100,7 +100,7 @@ struct AdvancedControlsMenu: View {
         HStack(spacing: Spacing.xl) {
             controlButton(
                 icon: "timer",
-                value: viewModel.exposureTime.formatted(.number.precision(.fractionLength(1))),
+                value: L10nFormat.decimal(viewModel.exposureTime, digits: 1),
                 isActive: viewModel.showExposurePicker
             ) {
                 withAnimation(AnimationPreset.springBouncy) {
@@ -205,5 +205,6 @@ struct AdvancedControlsMenu: View {
         .scaleEffect(viewModel.isCapturing ? 0.92 : 1.0)
         .animation(AnimationPreset.springBouncy, value: viewModel.isCapturing)
         .sensoryFeedback(.selection, trigger: viewModel.isCapturing)
+        .accessibilityLabel(viewModel.isCapturing ? L10n.Accessibility.stopCapture : L10n.Accessibility.startCapture)
     }
 }

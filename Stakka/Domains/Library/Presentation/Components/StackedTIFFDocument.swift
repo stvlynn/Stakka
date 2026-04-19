@@ -12,7 +12,7 @@ struct StackedTIFFDocument: FileDocument {
 
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
-            throw AppError.operationFailed("无法读取 TIFF 文档")
+            throw AppError.operationFailed(L10n.Error.tiffReadFailed)
         }
 
         self.data = data

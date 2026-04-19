@@ -88,6 +88,7 @@ All long-running operations (capture, stacking, file I/O) use Swift concurrency:
 
 **Platform Layer**
 - Design system tokens and shared view modifiers
+- Localization wrappers and shared formatters
 - Shared lightweight utility types
 - Cross-domain support services
 
@@ -144,6 +145,8 @@ Stakka/
     │   └── Extensions.swift
     └── SharedKernel/
         ├── AppError.swift
+        ├── L10n.swift
+        ├── L10nFormat.swift
         └── ProgressValue.swift
 ```
 
@@ -240,6 +243,17 @@ AnimationPreset.smooth        // 0.35s ease in/out
 AnimationPreset.quick         // 0.2s ease out
 AnimationPreset.gentle        // 0.5s ease in/out
 ```
+
+### Localization
+
+User-facing copy no longer lives directly in SwiftUI views.
+
+- `Platform/SharedKernel/L10n.swift` holds semantic keys and phrase helpers
+- `Platform/SharedKernel/L10nFormat.swift` centralizes locale-sensitive formatting such as decimals, durations, coordinates, and generated project titles
+- `*.lproj/Localizable.strings` contains translated UI copy
+- `*.lproj/InfoPlist.strings` contains permission copy
+
+This keeps primary screens free of raw localization keys and prevents mixed-language UI strings from drifting across modules.
 
 ### 4. Light Pollution Map
 

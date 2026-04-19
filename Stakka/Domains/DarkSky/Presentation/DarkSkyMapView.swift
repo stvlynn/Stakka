@@ -17,7 +17,7 @@ struct DarkSkyMapView: View {
 
                 Map(position: $position) {
                     if let coordinate = viewModel.selectedCoordinate {
-                        Marker("暗空点", coordinate: coordinate)
+                        Marker(L10n.DarkSky.marker, coordinate: coordinate)
                             .tint(Color.cosmicBlue)
                     }
                 }
@@ -34,7 +34,7 @@ struct DarkSkyMapView: View {
                     }
                 }
             }
-            .navigationTitle("光污染地图")
+            .navigationTitle(L10n.DarkSky.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -54,6 +54,7 @@ struct DarkSkyMapView: View {
                         Image(systemName: "location.fill")
                             .foregroundStyle(Color.cosmicBlue)
                     }
+                    .accessibilityLabel(L10n.Accessibility.centerOnLocation)
                 }
             }
             .task {

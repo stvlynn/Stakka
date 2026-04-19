@@ -30,7 +30,7 @@ struct StackProjectSummaryCard: View {
                         .font(.stakkaSmall)
                         .foregroundStyle(Color.textSecondary)
                     } else if project.cometMode == nil {
-                        Text("导入 Light 帧后自动选参考帧")
+                        Text(L10n.Library.autoReferenceHint(lightTitle: StackFrameKind.light.title))
                             .font(.stakkaSmall)
                             .foregroundStyle(Color.textSecondary)
                     }

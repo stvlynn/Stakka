@@ -71,7 +71,7 @@ actor LocalStackProjectRepository: StackProjectRepository {
 
     func duplicateProject(id: UUID) async throws -> StackingProject {
         guard let project = try await loadProject(id: id) else {
-            throw AppError.operationFailed("找不到要复制的工程")
+            throw AppError.operationFailed(L10n.Error.duplicateProjectMissing)
         }
 
         let duplicatedProject = duplicate(project)
@@ -98,7 +98,7 @@ actor LocalStackProjectRepository: StackProjectRepository {
 
     func markRecentProject(id: UUID) async throws {
         guard fileManager.fileExists(atPath: try projectDirectoryURL(for: id, createIfNeeded: false).path()) else {
-            throw AppError.operationFailed("找不到要切换的工程")
+            throw AppError.operationFailed(L10n.Error.switchProjectMissing)
         }
 
         try writeRecentProjectID(id)
@@ -362,7 +362,7 @@ private extension LocalStackProjectRepository {
         }
         let duplicatedAnnotations = Dictionary(uniqueKeysWithValues: duplicatedAnnotationPairs)
 
-        let duplicateTitle = project.title.hasSuffix("副本") ? project.title : "\(project.title) 副本"
+        let duplicateTitle = L10n.Project.duplicateTitle(from: project.title)
         return StackingProject(
             id: UUID(),
             title: duplicateTitle,
@@ -461,7 +461,7 @@ private extension LocalStackProjectRepository {
         }
 
         guard let jpegData = image.jpegData(compressionQuality: 0.95) else {
-            throw AppError.operationFailed("无法写入工程帧缓存")
+            throw AppError.operationFailed(L10n.Error.frameCacheWriteFailed)
         }
 
         try jpegData.write(to: url, options: .atomic)

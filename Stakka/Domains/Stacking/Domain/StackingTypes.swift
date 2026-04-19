@@ -12,15 +12,15 @@ enum StackFrameKind: String, CaseIterable, Codable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .light:
-            return "Light"
+            return L10n.Stacking.Frame.light
         case .dark:
-            return "Dark"
+            return L10n.Stacking.Frame.dark
         case .flat:
-            return "Flat"
+            return L10n.Stacking.Frame.flat
         case .darkFlat:
-            return "Dark Flat"
+            return L10n.Stacking.Frame.darkFlat
         case .bias:
-            return "Bias"
+            return L10n.Stacking.Frame.bias
         }
     }
 
@@ -72,13 +72,13 @@ enum StackingMode: String, CaseIterable, Codable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .average:
-            return "平均"
+            return L10n.Stacking.Mode.average
         case .median:
-            return "中值"
+            return L10n.Stacking.Mode.median
         case .kappaSigma:
-            return "Kappa"
+            return L10n.Stacking.Mode.kappa
         case .medianKappaSigma:
-            return "M-Kappa"
+            return L10n.Stacking.Mode.medianKappa
         }
     }
 
@@ -106,11 +106,11 @@ enum CometStackingMode: String, CaseIterable, Codable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .standard:
-            return "标准"
+            return L10n.Stacking.Comet.standard
         case .cometOnly:
-            return "仅彗星"
+            return L10n.Stacking.Comet.cometOnly
         case .cometAndStars:
-            return "双冻结"
+            return L10n.Stacking.Comet.cometAndStars
         }
     }
 
@@ -128,11 +128,11 @@ enum CometStackingMode: String, CaseIterable, Codable, Identifiable, Sendable {
     var description: String {
         switch self {
         case .standard:
-            return "恒星冻结，彗星拖尾"
+            return L10n.Stacking.Comet.standardDescription
         case .cometOnly:
-            return "彗星冻结，恒星拖尾"
+            return L10n.Stacking.Comet.cometOnlyDescription
         case .cometAndStars:
-            return "彗星和恒星都冻结"
+            return L10n.Stacking.Comet.cometAndStarsDescription
         }
     }
 }
@@ -232,7 +232,7 @@ struct StackingProject {
 
     init(
         id: UUID = UUID(),
-        title: String = "图库工程",
+        title: String = L10n.Project.defaultTitle,
         mode: StackingMode = .average,
         cometMode: CometStackingMode? = nil,
         referenceFrameID: UUID? = nil,
@@ -300,15 +300,15 @@ enum StackingError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyInput:
-            return "没有可堆栈的图像"
+            return L10n.Error.emptyInput
         case .notEnoughLightFrames:
-            return "至少需要两张启用的 Light 帧"
+            return L10n.Error.notEnoughLightFrames
         case .missingReferenceFrame:
-            return "没有可用的参考帧"
+            return L10n.Error.missingReferenceFrame
         case .cometAnnotationsRequired:
-            return "还有彗星帧需要检查或修正"
+            return L10n.Error.cometAnnotationsRequired
         case .incompatibleDimensions:
-            return "图像尺寸不一致"
+            return L10n.Error.incompatibleDimensions
         case .processingFailed(let message):
             return message
         }

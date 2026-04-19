@@ -17,7 +17,7 @@ struct ProcessingStatusCard: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.starWhite)
 
-                Text("工程正在更新")
+                Text(L10n.Library.processingUpdating)
                     .font(.stakkaSmall)
                     .foregroundStyle(Color.textSecondary)
             }
