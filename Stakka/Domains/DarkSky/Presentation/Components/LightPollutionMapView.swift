@@ -18,7 +18,7 @@ struct LightPollutionMapView: UIViewRepresentable {
         mapView.overrideUserInterfaceStyle = .dark
         mapView.showsUserLocation = true
 
-        let tileOverlay = LocalLightPollutionTileOverlay()
+        let tileOverlay = WMTSLightPollutionTileOverlay()
         mapView.addOverlay(tileOverlay, level: .aboveRoads)
 
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))

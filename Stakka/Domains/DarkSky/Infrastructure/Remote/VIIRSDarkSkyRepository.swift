@@ -50,10 +50,33 @@ struct VIIRSDarkSkyRepository: DarkSkyRepository {
             (35.6762, 139.6503, "Tokyo"),
             (37.5665, 126.9780, "Seoul"),
             (1.3521, 103.8198, "Singapore"),
+
+            // USA cities
             (40.7128, -74.0060, "New York"),
             (34.0522, -118.2437, "Los Angeles"),
+            (37.7749, -122.4194, "San Francisco"),
+            (41.8781, -87.6298, "Chicago"),
+            (29.7604, -95.3698, "Houston"),
+            (33.4484, -112.0740, "Phoenix"),
+            (39.7392, -104.9903, "Denver"),
+            (47.6062, -122.3321, "Seattle"),
+            (25.7617, -80.1918, "Miami"),
+            (42.3601, -71.0589, "Boston"),
+            (33.7490, -84.3880, "Atlanta"),
+
+            // Europe cities
             (51.5074, -0.1278, "London"),
             (48.8566, 2.3522, "Paris"),
+            (52.5200, 13.4050, "Berlin"),
+            (41.9028, 12.4964, "Rome"),
+            (40.4168, -3.7038, "Madrid"),
+
+            // Other major cities
+            (55.7558, 37.6173, "Moscow"),
+            (19.0760, 72.8777, "Mumbai"),
+            (28.6139, 77.2090, "Delhi"),
+            (-23.5505, -46.6333, "São Paulo"),
+            (-33.8688, 151.2093, "Sydney"),
         ]
 
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
@@ -61,7 +84,7 @@ struct VIIRSDarkSkyRepository: DarkSkyRepository {
         var minDistance = Double.infinity
         for city in majorCities {
             let cityLocation = CLLocation(latitude: city.lat, longitude: city.lon)
-            let distance = location.distance(from: cityLocation) / 1000.0 // Convert to km
+            let distance = location.distance(from: cityLocation) / 1000.0
             minDistance = min(minDistance, distance)
         }
 
