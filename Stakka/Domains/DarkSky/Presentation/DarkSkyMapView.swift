@@ -3,7 +3,7 @@ import MapKit
 
 struct DarkSkyMapView: View {
     @StateObject private var viewModel: DarkSkyViewModel
-    @State private var position: MapCameraPosition = .automatic
+    @State private var cameraRegion: MKCoordinateRegion?
 
     init(viewModel: DarkSkyViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -12,19 +12,14 @@ struct DarkSkyMapView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.spaceBackground
-                    .ignoresSafeArea()
-
-                Map(position: $position) {
-                    LightPollutionMapContent(cities: viewModel.majorCities)
-
-                    if let coordinate = viewModel.selectedCoordinate {
-                        Marker(L10n.DarkSky.marker, coordinate: coordinate)
-                            .tint(Color.cosmicBlue)
+                LightPollutionMapView(
+                    selectedCoordinate: .constant(viewModel.selectedCoordinate),
+                    cameraRegion: cameraRegion,
+                    onTap: { coordinate in
+                        Task { await viewModel.selectCoordinate(coordinate) }
                     }
-                }
-                .mapStyle(.standard(elevation: .flat))
-                .preferredColorScheme(.dark)
+                )
+                .ignoresSafeArea()
 
                 VStack {
                     Spacer()
@@ -45,12 +40,12 @@ struct DarkSkyMapView: View {
                     Button {
                         Task {
                             await viewModel.loadCurrentLocation()
-                            position = .region(
-                                MKCoordinateRegion(
-                                    center: viewModel.selectedCoordinate ?? CLLocationCoordinate2D(latitude: 35.6824, longitude: 139.7690),
+                            if let coord = viewModel.selectedCoordinate {
+                                cameraRegion = MKCoordinateRegion(
+                                    center: coord,
                                     span: MKCoordinateSpan(latitudeDelta: 0.35, longitudeDelta: 0.35)
                                 )
-                            )
+                            }
                         }
                     } label: {
                         Image(systemName: "location.fill")
@@ -62,13 +57,10 @@ struct DarkSkyMapView: View {
             .task {
                 guard viewModel.selectedCoordinate == nil else { return }
                 await viewModel.loadCurrentLocation()
-
-                if let coordinate = viewModel.selectedCoordinate {
-                    position = .region(
-                        MKCoordinateRegion(
-                            center: coordinate,
-                            span: MKCoordinateSpan(latitudeDelta: 0.35, longitudeDelta: 0.35)
-                        )
+                if let coord = viewModel.selectedCoordinate {
+                    cameraRegion = MKCoordinateRegion(
+                        center: coord,
+                        span: MKCoordinateSpan(latitudeDelta: 0.35, longitudeDelta: 0.35)
                     )
                 }
             }
