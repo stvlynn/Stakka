@@ -28,4 +28,18 @@ enum BortleLevel: Int, CaseIterable, Codable, Sendable {
         case .nine: return .pink
         }
     }
+
+    var mapColor: Color {
+        switch self {
+        case .one: return Color(red: 0, green: 1, blue: 0)
+        case .two: return Color(red: 0.25, green: 1, blue: 0)
+        case .three: return Color(red: 0.5, green: 1, blue: 0)
+        case .four: return Color(red: 1, green: 1, blue: 0)
+        case .five: return Color(red: 1, green: 0.84, blue: 0)
+        case .six: return Color(red: 1, green: 0.65, blue: 0)
+        case .seven: return Color(red: 1, green: 0.42, blue: 0)
+        case .eight: return Color(red: 1, green: 0, blue: 0)
+        case .nine: return Color(red: 1, green: 0.08, blue: 0.58)
+        }
+    }
 }

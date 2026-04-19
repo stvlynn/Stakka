@@ -16,6 +16,8 @@ struct DarkSkyMapView: View {
                     .ignoresSafeArea()
 
                 Map(position: $position) {
+                    LightPollutionMapContent(cities: viewModel.majorCities)
+
                     if let coordinate = viewModel.selectedCoordinate {
                         Marker(L10n.DarkSky.marker, coordinate: coordinate)
                             .tint(Color.cosmicBlue)
