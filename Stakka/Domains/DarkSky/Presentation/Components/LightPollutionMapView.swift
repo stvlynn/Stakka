@@ -7,9 +7,6 @@ struct LightPollutionMapView: UIViewRepresentable {
     var cameraRegion: MKCoordinateRegion?
     var onTap: ((CLLocationCoordinate2D) -> Void)?
 
-    private static let tileURLTemplate =
-        "https://www.lightpollutionmap.info/tiles/VIIRS_2023/{z}/{x}/{y}.png"
-
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
@@ -21,8 +18,7 @@ struct LightPollutionMapView: UIViewRepresentable {
         mapView.overrideUserInterfaceStyle = .dark
         mapView.showsUserLocation = true
 
-        let tileOverlay = MKTileOverlay(urlTemplate: Self.tileURLTemplate)
-        tileOverlay.canReplaceMapContent = false
+        let tileOverlay = LocalLightPollutionTileOverlay()
         mapView.addOverlay(tileOverlay, level: .aboveRoads)
 
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
