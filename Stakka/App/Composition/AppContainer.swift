@@ -11,7 +11,7 @@ final class AppContainer {
     private let sessionRepository: SessionRepository
 
     init() {
-        darkSkyRepository = MockDarkSkyRepository()
+        darkSkyRepository = VIIRSDarkSkyRepository()
         locationService = CoreLocationService()
         cameraRepository = AVCaptureSessionRepository(permissionService: CameraPermissionService())
         stackingProcessor = ImageStacker()
