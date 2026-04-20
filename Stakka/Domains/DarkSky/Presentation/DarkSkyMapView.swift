@@ -14,7 +14,7 @@ struct DarkSkyMapView: View {
             ZStack {
                 LightPollutionMapView(
                     selectedCoordinate: .constant(viewModel.selectedCoordinate),
-                    cameraRegion: cameraRegion,
+                    cameraRegion: $cameraRegion,
                     onTap: { coordinate in
                         Task { await viewModel.selectCoordinate(coordinate) }
                     }

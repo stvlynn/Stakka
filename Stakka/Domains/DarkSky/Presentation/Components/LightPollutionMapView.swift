@@ -4,7 +4,7 @@ import UIKit
 
 struct LightPollutionMapView: UIViewRepresentable {
     @Binding var selectedCoordinate: CLLocationCoordinate2D?
-    var cameraRegion: MKCoordinateRegion?
+    @Binding var cameraRegion: MKCoordinateRegion?
     var onTap: ((CLLocationCoordinate2D) -> Void)?
 
     func makeCoordinator() -> Coordinator {
@@ -30,6 +30,7 @@ struct LightPollutionMapView: UIViewRepresentable {
     func updateUIView(_ mapView: MKMapView, context: Context) {
         if let region = cameraRegion {
             mapView.setRegion(region, animated: true)
+            DispatchQueue.main.async { cameraRegion = nil }
         }
 
         mapView.removeAnnotations(mapView.annotations.filter { !($0 is MKUserLocation) })
