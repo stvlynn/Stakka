@@ -38,6 +38,14 @@ enum L10nFormat {
         return formatter.string(from: max(0, seconds)) ?? "\(Int(seconds.rounded()))s"
     }
 
+    static func sqm(_ value: Double) -> String {
+        "\(decimal(value, digits: 2)) mag/arcsec\u{00B2}"
+    }
+
+    static func brightness(_ value: Double) -> String {
+        "\(decimal(value, digits: 2)) mcd/m\u{00B2}"
+    }
+
     static func ratio(_ current: Int, _ total: Int) -> String {
         "\(current)/\(total)"
     }

@@ -24,6 +24,31 @@
 "darksky.bortle.7" = "近城区";
 "darksky.bortle.8" = "城市天空";
 "darksky.bortle.9" = "市中心";
+"darksky.label.sqm" = "SQM 数值";
+"darksky.label.grade" = "暗夜等级";
+"darksky.label.brightness" = "地面亮度";
+"darksky.label.milkyWay" = "银河可见度";
+"darksky.label.galaxy" = "M31/M33";
+"darksky.label.zodiacal" = "黄道光";
+"darksky.grade.1" = "一级";
+"darksky.grade.2" = "二级";
+"darksky.grade.3" = "三级";
+"darksky.grade.4" = "四级";
+"darksky.grade.5" = "五级";
+"darksky.milkyway.spectacular" = "极其壮观，结构清晰";
+"darksky.milkyway.clear" = "清晰可见";
+"darksky.milkyway.partial" = "部分可见";
+"darksky.milkyway.coreOnly" = "仅银心可见";
+"darksky.milkyway.invisible" = "肉眼不可见";
+"darksky.galaxy.both" = "M31、M33 肉眼可见";
+"darksky.galaxy.m31" = "M31 肉眼可见";
+"darksky.galaxy.barely" = "勉强可辨";
+"darksky.galaxy.invisible" = "肉眼不可见";
+"darksky.zodiacal.veryClear" = "极其清晰";
+"darksky.zodiacal.clear" = "清晰可见";
+"darksky.zodiacal.visible" = "可见";
+"darksky.zodiacal.invisible" = "肉眼不可见";
+"darksky.search.placeholder" = "搜索地点";
 
 "camera.title" = "堆栈拍摄";
 "camera.recentProject.saved" = "已写入最近工程";
@@ -117,6 +142,7 @@
 "error.document.tiffReadFailed" = "无法读取 TIFF 文档";
 
 "a11y.darksky.centerOnLocation" = "定位到当前位置";
+"a11y.darksky.search" = "搜索";
 "a11y.camera.openSettings" = "打开拍摄设置";
 "a11y.library.openProjects" = "打开已保存工程";
 "a11y.common.dismissPicker" = "关闭选择器";

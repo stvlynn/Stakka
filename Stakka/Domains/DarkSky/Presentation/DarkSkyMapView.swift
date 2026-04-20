@@ -4,9 +4,14 @@ import MapKit
 struct DarkSkyMapView: View {
     @StateObject private var viewModel: DarkSkyViewModel
     @State private var cameraRegion: MKCoordinateRegion?
+    @FocusState private var isSearchFocused: Bool
 
     init(viewModel: DarkSkyViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    private var showingResults: Bool {
+        isSearchFocused && !viewModel.searchResults.isEmpty
     }
 
     var body: some View {
@@ -16,20 +21,29 @@ struct DarkSkyMapView: View {
                     selectedCoordinate: .constant(viewModel.selectedCoordinate),
                     cameraRegion: $cameraRegion,
                     onTap: { coordinate in
+                        isSearchFocused = false
                         Task { await viewModel.selectCoordinate(coordinate) }
                     }
                 )
                 .ignoresSafeArea()
 
-                VStack {
+                VStack(spacing: Spacing.sm) {
                     Spacer()
-                    if let reading = viewModel.currentReading {
+
+                    if showingResults {
+                        searchResultsList
+                    }
+
+                    searchBar
+
+                    if let reading = viewModel.currentReading, !showingResults {
                         DarkSkyInfoCard(reading: reading)
-                            .padding(.horizontal, Spacing.md)
-                            .padding(.bottom, Spacing.lg)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.lg)
+                .animation(AnimationPreset.smooth, value: showingResults)
             }
             .navigationTitle(L10n.DarkSky.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -65,5 +79,79 @@ struct DarkSkyMapView: View {
                 }
             }
         }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField(L10n.DarkSky.searchPlaceholder, text: $viewModel.searchText)
+                .foregroundStyle(Color.starWhite)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .focused($isSearchFocused)
+                .onChange(of: viewModel.searchText) { _, _ in
+                    viewModel.updateSearchQuery()
+                }
+
+            if !viewModel.searchText.isEmpty {
+                Button {
+                    viewModel.clearSearch()
+                    isSearchFocused = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(Spacing.sm)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private var searchResultsList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.searchResults.indices, id: \.self) { index in
+                    let result = viewModel.searchResults[index]
+                    Button {
+                        Task {
+                            isSearchFocused = false
+                            if let coord = await viewModel.selectSearchResult(result) {
+                                viewModel.clearSearch()
+                                cameraRegion = MKCoordinateRegion(
+                                    center: coord,
+                                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                )
+                            }
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(result.title)
+                                .font(.stakkaCaption)
+                                .foregroundStyle(Color.starWhite)
+                                .lineLimit(1)
+                            if !result.subtitle.isEmpty {
+                                Text(result.subtitle)
+                                    .font(.stakkaSmall)
+                                    .foregroundStyle(Color.textTertiary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.vertical, Spacing.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    if index < viewModel.searchResults.count - 1 {
+                        Divider()
+                            .overlay(Color.spaceSurfaceElevated)
+                            .padding(.horizontal, Spacing.sm)
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: 240)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

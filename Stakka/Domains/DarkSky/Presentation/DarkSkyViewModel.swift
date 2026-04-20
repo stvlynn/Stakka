@@ -5,9 +5,13 @@ import MapKit
 final class DarkSkyViewModel: ObservableObject {
     @Published private(set) var selectedCoordinate: CLLocationCoordinate2D?
     @Published private(set) var currentReading: LightPollution?
+    @Published var searchText = ""
+    @Published private(set) var searchResults: [MKLocalSearchCompletion] = []
 
     private let fetchPollutionAtLocation: FetchPollutionAtLocationUseCase
     private let centerOnUserLocation: CenterOnUserLocationUseCase
+    private let searchCompleter = MKLocalSearchCompleter()
+    private var searchCompleterDelegate: SearchCompleterDelegate?
 
     let majorCities: [(coordinate: CLLocationCoordinate2D, name: String)] = [
         (CLLocationCoordinate2D(latitude: 39.9042, longitude: 116.4074), "Beijing"),
@@ -45,6 +49,7 @@ final class DarkSkyViewModel: ObservableObject {
     ) {
         self.fetchPollutionAtLocation = fetchPollutionAtLocation
         self.centerOnUserLocation = centerOnUserLocation
+        setupSearchCompleter()
     }
 
     func loadCurrentLocation() async {
@@ -56,4 +61,57 @@ final class DarkSkyViewModel: ObservableObject {
         selectedCoordinate = coordinate
         currentReading = try? await fetchPollutionAtLocation.execute(at: coordinate)
     }
+
+    func clearSearch() {
+        searchText = ""
+        searchResults = []
+    }
+
+    func updateSearchQuery() {
+        if searchText.isEmpty {
+            searchResults = []
+        } else {
+            searchCompleter.queryFragment = searchText
+        }
+    }
+
+    func selectSearchResult(_ completion: MKLocalSearchCompletion) async -> CLLocationCoordinate2D? {
+        let request = MKLocalSearch.Request(completion: completion)
+        let search = MKLocalSearch(request: request)
+        do {
+            let response = try await search.start()
+            if let item = response.mapItems.first {
+                let coordinate = item.placemark.coordinate
+                await selectCoordinate(coordinate)
+                return coordinate
+            }
+        } catch {}
+        return nil
+    }
+
+    private func setupSearchCompleter() {
+        let delegate = SearchCompleterDelegate { [weak self] results in
+            Task { @MainActor [weak self] in
+                self?.searchResults = results
+            }
+        }
+        searchCompleter.delegate = delegate
+        searchCompleter.resultTypes = [.address, .pointOfInterest]
+        searchCompleterDelegate = delegate
+    }
+}
+
+private final class SearchCompleterDelegate: NSObject, MKLocalSearchCompleterDelegate {
+    let onUpdate: ([MKLocalSearchCompletion]) -> Void
+
+    init(onUpdate: @escaping ([MKLocalSearchCompletion]) -> Void) {
+        self.onUpdate = onUpdate
+        super.init()
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        onUpdate(completer.results)
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {}
 }

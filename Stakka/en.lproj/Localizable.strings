@@ -24,6 +24,31 @@
 "darksky.bortle.7" = "Suburban Edge";
 "darksky.bortle.8" = "City Sky";
 "darksky.bortle.9" = "Inner City";
+"darksky.label.sqm" = "SQM Value";
+"darksky.label.grade" = "Dark Sky Grade";
+"darksky.label.brightness" = "Ground Brightness";
+"darksky.label.milkyWay" = "Milky Way";
+"darksky.label.galaxy" = "M31/M33";
+"darksky.label.zodiacal" = "Zodiacal Light";
+"darksky.grade.1" = "Grade 1";
+"darksky.grade.2" = "Grade 2";
+"darksky.grade.3" = "Grade 3";
+"darksky.grade.4" = "Grade 4";
+"darksky.grade.5" = "Grade 5";
+"darksky.milkyway.spectacular" = "Spectacular, structure visible";
+"darksky.milkyway.clear" = "Clearly visible";
+"darksky.milkyway.partial" = "Partially visible";
+"darksky.milkyway.coreOnly" = "Only core visible";
+"darksky.milkyway.invisible" = "Not visible";
+"darksky.galaxy.both" = "M31 & M33 naked-eye";
+"darksky.galaxy.m31" = "M31 naked-eye";
+"darksky.galaxy.barely" = "Barely discernible";
+"darksky.galaxy.invisible" = "Not visible";
+"darksky.zodiacal.veryClear" = "Extremely clear";
+"darksky.zodiacal.clear" = "Clearly visible";
+"darksky.zodiacal.visible" = "Visible";
+"darksky.zodiacal.invisible" = "Not visible";
+"darksky.search.placeholder" = "Search location";
 
 "camera.title" = "Stack Capture";
 "camera.recentProject.saved" = "Saved to recent project";
@@ -117,6 +142,7 @@
 "error.document.tiffReadFailed" = "Cannot read TIFF document";
 
 "a11y.darksky.centerOnLocation" = "Center on current location";
+"a11y.darksky.search" = "Search";
 "a11y.camera.openSettings" = "Open capture settings";
 "a11y.library.openProjects" = "Open saved projects";
 "a11y.common.dismissPicker" = "Dismiss picker";

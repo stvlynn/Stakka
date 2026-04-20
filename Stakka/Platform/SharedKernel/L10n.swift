@@ -57,6 +57,35 @@ enum L10n {
                 return L10n.text("darksky.bortle.9", default: "Inner City")
             }
         }
+
+        static var labelSQM: String { L10n.text("darksky.label.sqm", default: "SQM Value") }
+        static var labelDarkSkyGrade: String { L10n.text("darksky.label.grade", default: "Dark Sky Grade") }
+        static var labelBrightness: String { L10n.text("darksky.label.brightness", default: "Ground Brightness") }
+        static var labelMilkyWay: String { L10n.text("darksky.label.milkyWay", default: "Milky Way") }
+        static var labelGalaxy: String { L10n.text("darksky.label.galaxy", default: "M31/M33") }
+        static var labelZodiacal: String { L10n.text("darksky.label.zodiacal", default: "Zodiacal Light") }
+
+        static func darkSkyGrade(level: Int) -> String {
+            L10n.text("darksky.grade.\(level)", default: "Grade \(level)")
+        }
+
+        static var milkyWaySpectacular: String { L10n.text("darksky.milkyway.spectacular", default: "Spectacular, structure visible") }
+        static var milkyWayClear: String { L10n.text("darksky.milkyway.clear", default: "Clearly visible") }
+        static var milkyWayPartial: String { L10n.text("darksky.milkyway.partial", default: "Partially visible") }
+        static var milkyWayCoreOnly: String { L10n.text("darksky.milkyway.coreOnly", default: "Only core visible") }
+        static var milkyWayInvisible: String { L10n.text("darksky.milkyway.invisible", default: "Not visible") }
+
+        static var galaxyBoth: String { L10n.text("darksky.galaxy.both", default: "M31 & M33 naked-eye") }
+        static var galaxyM31: String { L10n.text("darksky.galaxy.m31", default: "M31 naked-eye") }
+        static var galaxyBarely: String { L10n.text("darksky.galaxy.barely", default: "Barely discernible") }
+        static var galaxyInvisible: String { L10n.text("darksky.galaxy.invisible", default: "Not visible") }
+
+        static var zodiacalVeryClear: String { L10n.text("darksky.zodiacal.veryClear", default: "Extremely clear") }
+        static var zodiacalClear: String { L10n.text("darksky.zodiacal.clear", default: "Clearly visible") }
+        static var zodiacalVisible: String { L10n.text("darksky.zodiacal.visible", default: "Visible") }
+        static var zodiacalInvisible: String { L10n.text("darksky.zodiacal.invisible", default: "Not visible") }
+
+        static var searchPlaceholder: String { L10n.text("darksky.search.placeholder", default: "Search location") }
     }
 
     enum Camera {
@@ -263,6 +292,9 @@ enum L10n {
     enum Accessibility {
         static var centerOnLocation: String {
             L10n.text("a11y.darksky.centerOnLocation", default: "Center on current location")
+        }
+        static var search: String {
+            L10n.text("a11y.darksky.search", default: "Search")
         }
         static var openSettings: String {
             L10n.text("a11y.camera.openSettings", default: "Open capture settings")
