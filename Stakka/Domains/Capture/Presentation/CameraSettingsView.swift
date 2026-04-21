@@ -31,6 +31,8 @@ struct CameraSettingsView: View {
                 }
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .preferredColorScheme(.dark)
     }
 
@@ -162,7 +164,10 @@ struct CameraSettingsView: View {
                 Image(systemName: "minus.circle.fill")
                     .foregroundStyle(Color.textTertiary)
                     .font(.title3)
+                    .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
             Text(valueText)
                 .font(.stakkaCaption)
@@ -175,7 +180,10 @@ struct CameraSettingsView: View {
                 Image(systemName: "plus.circle.fill")
                     .foregroundStyle(Color.cosmicBlue)
                     .font(.title3)
+                    .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
     }
 }

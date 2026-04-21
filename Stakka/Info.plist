@@ -56,5 +56,25 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Stakka Wizard Frame Reference</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.stakka.wizard.frameRef</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-stakka-wizard-frame-ref</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

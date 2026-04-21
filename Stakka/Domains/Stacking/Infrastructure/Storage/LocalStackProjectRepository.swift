@@ -49,13 +49,17 @@ actor LocalStackProjectRepository: StackProjectRepository {
                 return nil
             }
 
+            let resultURL = resultImageURL(for: directoryURL)
+            let hasResult = fileManager.fileExists(atPath: resultURL.path())
+
             return StackProjectSummary(
                 id: projectID,
                 title: storedProject.title,
                 updatedAt: storedProject.updatedAt,
                 totalFrameCount: storedProject.frames.count,
                 lightFrameCount: storedProject.frames.filter { $0.kind == .light && $0.isEnabled }.count,
-                cometMode: storedProject.cometMode
+                cometMode: storedProject.cometMode,
+                resultThumbnailURL: hasResult ? resultURL : nil
             )
         }
 
@@ -64,8 +68,29 @@ actor LocalStackProjectRepository: StackProjectRepository {
         }
     }
 
+    func loadResultImage(id: UUID) async throws -> UIImage? {
+        let directoryURL = try projectDirectoryURL(for: id, createIfNeeded: false)
+        let resultURL = resultImageURL(for: directoryURL)
+        guard fileManager.fileExists(atPath: resultURL.path()),
+              let data = try? Data(contentsOf: resultURL),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+        return image
+    }
+
     func save(_ project: StackingProject) async throws {
         try write(project, markAsRecent: true)
+        notifyCatalogChange()
+    }
+
+    /// Writes the stacked result image next to the project's JSON. Stored as
+    /// PNG for lossless preservation; JPEG is only used as a fallback when
+    /// PNG encoding unexpectedly fails.
+    func saveResult(_ image: UIImage, for projectID: UUID) async throws {
+        let directoryURL = try projectDirectoryURL(for: projectID, createIfNeeded: true)
+        let resultURL = resultImageURL(for: directoryURL)
+        try writeImage(image, to: resultURL)
         notifyCatalogChange()
     }
 
@@ -510,6 +535,13 @@ private extension LocalStackProjectRepository {
 
     func projectFileURL(for directoryURL: URL) -> URL {
         directoryURL.appendingPathComponent("project.json")
+    }
+
+    /// Filename used for the persisted stack result image. Kept at the
+    /// project root (not inside `Frames/`) so it survives when we prune
+    /// orphaned frame images on save.
+    func resultImageURL(for directoryURL: URL) -> URL {
+        directoryURL.appendingPathComponent("result.png")
     }
 
     func recentProjectPointerURL() throws -> URL {

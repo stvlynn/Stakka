@@ -22,21 +22,10 @@ struct StackFrameSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Label(kind.title, systemImage: kind.symbolName)
-                    .font(.stakkaHeadline)
-                    .foregroundStyle(Color.starWhite)
-
-                Text("\(frames.count)")
-                    .font(.stakkaCaption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.cosmicBlue)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, 6)
-                    .background(Color.cosmicBlue.opacity(0.12))
-                    .continuousCorners(CornerRadius.md)
-                    .monospacedDigit()
-
+            // Compact action row. The kind title + count are rendered by the
+            // outer `StackFrameListSection` header, so we only expose the
+            // import / clear controls here to avoid visual duplication.
+            HStack(spacing: Spacing.sm) {
                 Spacer()
 
                 PhotosPicker(selection: $selectedItems, matching: .images) {
@@ -102,8 +91,11 @@ struct StackFrameSectionView: View {
                 }
             }
         }
-        .padding(Spacing.md)
-        .glassCard()
+        // Padding only — the outer `StackFrameListSection` now owns the card
+        // chrome. Leaving `.glassCard()` here caused visible double-stroke
+        // borders once the view was wrapped in the collapsible list.
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.sm)
         .onChange(of: selectedItems) { _, newItems in
             guard !newItems.isEmpty else { return }
 
@@ -244,7 +236,7 @@ private struct StackFrameThumbnailCard: View {
             Text(value)
                 .monospacedDigit()
         }
-        .font(.system(size: 11, weight: .medium))
+        .font(.caption2.weight(.medium))
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

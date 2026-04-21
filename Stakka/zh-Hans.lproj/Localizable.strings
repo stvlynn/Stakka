@@ -15,7 +15,7 @@
 
 "gallery.title" = "图库";
 "gallery.empty" = "完成的照片会显示在这里";
-"gallery.empty.hint" = "点击下方 + 创建第一个堆栈工程";
+"gallery.empty.hint" = "点击下方按钮创建第一个堆栈工程";
 "gallery.create" = "新建工程";
 
 "wizard.step.mode" = "堆栈模式";
@@ -33,6 +33,25 @@
 "wizard.mode.median.hint" = "适合去除卫星和飞机轨迹，使用中位值让离群像素消失。";
 "wizard.mode.kappa.hint" = "高级模式，剔除偏离均值过远的像素后再平均。";
 "wizard.mode.medianKappa.hint" = "结合中值剔除与 Kappa-Sigma 裁剪，获得更干净的结果。";
+
+"wizard.step.light" = "亮场帧";
+"wizard.step.light.explanation" = "这些是你拍摄的夜空照片，至少选 2 张；数量越多，最终画面越干净。";
+"wizard.step.dark" = "暗场帧";
+"wizard.step.dark.explanation" = "可选。暗场帧用来消除传感器噪点和热像素，没有就点下一步跳过。";
+"wizard.step.calibration" = "校准帧";
+"wizard.step.calibration.explanation" = "可选。平场与偏置帧用来校正暗角和读出噪声，随手拍一般不需要。";
+"wizard.optional" = "可选";
+"wizard.learnMore" = "了解更多";
+"wizard.thumbnail.dragToDelete" = "拖到这里删除";
+"wizard.thumbnail.count" = "已导入 %@ 张";
+"wizard.thumbnail.loading" = "加载中";
+"wizard.preview.index" = "%@ / %@";
+"wizard.preview.close" = "关闭";
+"wizard.explainer.light" = "亮场帧就是你对着星空拍下的正片。Stakka 会把它们对齐并叠加，提升信号、抑制噪声。";
+"wizard.explainer.dark" = "暗场帧是盖上镜头盖、使用与亮场相同曝光和 ISO 拍的黑照，用来暴露传感器的热噪点，Stakka 会把它减去。";
+"wizard.explainer.flat" = "平场帧是对着均匀亮度表面（如暮光天空）拍的照片，镜头保持不动。用来显示暗角与灰尘痕迹，Stakka 会据此校正。";
+"wizard.explainer.darkFlat" = "暗平场帧与平场帧使用相同曝光，但盖上镜头盖。用来剔除平场帧内部的噪声。";
+"wizard.explainer.bias" = "偏置帧是盖上镜头盖、使用相机最短曝光拍摄，用来捕捉传感器的底层读出图案。";
 
 "darksky.title" = "光污染地图";
 "darksky.marker" = "暗空点";
@@ -97,6 +116,17 @@
 "library.action.analyze" = "分析";
 "library.action.register" = "配准";
 "library.action.stack" = "堆栈";
+"library.action.startStacking" = "开始堆栈";
+"library.section.frames" = "照片帧";
+"library.result.placeholder" = "堆栈完成的夜空将显示在这里";
+"library.result.placeholderHint" = "添加亮场帧后，点击「开始堆栈」即可开始。";
+"library.progress.analyzing" = "分析照片";
+"library.progress.registering" = "对齐照片";
+"library.progress.stacking" = "堆栈照片";
+"library.progress.count" = "第 %@ 张 / 共 %@ 张";
+"library.progress.eta" = "还剩约 %@ 秒";
+"library.progress.throughput" = "%@ 张/秒";
+"gallery.preview.openProject" = "进入工程";
 "library.hint.comet" = "选择彗星模式后，先配准自动估计彗星位置，再进入彗星检查。";
 "library.hint.reference" = "%@至少 2 张，参考帧会自动选分数最高者，也可手动指定。";
 "library.browser.title" = "工程";

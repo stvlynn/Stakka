@@ -52,7 +52,9 @@ final class AppContainer {
             registerProject: RegisterStackProjectUseCase(processor: stackingProcessor),
             runStacking: RunStackingUseCase(processor: stackingProcessor),
             exportStackedImage: ExportStackedImageUseCase(repository: photoLibraryRepository),
-            prepareTIFFExport: PrepareStackedTIFFExportUseCase()
+            prepareTIFFExport: PrepareStackedTIFFExportUseCase(),
+            persistStackResult: PersistStackResultUseCase(repository: stackProjectRepository),
+            loadStackResult: LoadStackResultUseCase(repository: stackProjectRepository)
         )
     }
 }

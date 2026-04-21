@@ -11,7 +11,10 @@ extension Color {
     static let starWhite = Color(hex: "#F8FAFC")
     static let cosmicBlue = Color(hex: "#3B82F6")
     static let cosmicBlueDim = Color(hex: "#60A5FA")
-    static let cosmicBlueGlow = Color(hex: "#22C55E")  // CTA accent
+
+    /// CTA accent green (#22C55E). Previously mis-named `cosmicBlueGlow`;
+    /// renamed to match its actual hue and semantic role.
+    static let ctaAccent = Color(hex: "#22C55E")
 
     // Accent Colors
     static let nebulaPurple = Color(hex: "#A78BFA")
@@ -51,16 +54,39 @@ extension Color {
 }
 
 // MARK: - Typography
+//
+// Font strategy (post-review):
+// - Titles use `.rounded` design to echo the "Dynamic Island" aesthetic.
+// - Body / caption use the default SF Pro so Chinese glyphs render softer.
+// - Numeric / technical readouts keep `.monospaced` + `.monospacedDigit()` so
+//   values don't jitter while live-updating.
+// - All tokens use semantic `Font.TextStyle`, enabling Dynamic Type out of the
+//   box. Call-sites that need to cap the size for layout-critical screens
+//   (e.g. the capture HUD) should apply `.dynamicTypeSize(...)` locally.
 extension Font {
-    static let stakkaTitle = Font.system(size: 28, weight: .bold, design: .monospaced)
-    static let stakkaHeadline = Font.system(size: 20, weight: .semibold, design: .monospaced)
-    static let stakkaBody = Font.system(size: 16, weight: .regular, design: .monospaced)
-    static let stakkaCaption = Font.system(size: 14, weight: .medium, design: .monospaced)
-    static let stakkaSmall = Font.system(size: 12, weight: .regular, design: .monospaced)
+    // Titles (rounded, SF Pro)
+    static let stakkaTitle = Font.system(.largeTitle, design: .rounded).weight(.bold)
+    static let stakkaHeadline = Font.system(.title2, design: .rounded).weight(.semibold)
+    static let stakkaSectionTitle = Font.system(.headline, design: .rounded).weight(.semibold)
+
+    // Body / caption (SF default — better for CJK)
+    static let stakkaBody = Font.system(.body)
+    static let stakkaCaption = Font.system(.subheadline).weight(.medium)
+    static let stakkaSmall = Font.system(.footnote)
+
+    // Explicit monospaced body for code / path / hex-style payloads.
+    static let stakkaBodyMono = Font.system(.body, design: .monospaced)
 
     // Numeric display fonts with tabular spacing
-    static let stakkaNumeric = Font.system(size: 16, weight: .medium, design: .monospaced).monospacedDigit()
-    static let stakkaNumericLarge = Font.system(size: 24, weight: .semibold, design: .monospaced).monospacedDigit()
+    static let stakkaNumericSmall = Font.system(.subheadline, design: .monospaced)
+        .monospacedDigit()
+        .weight(.medium)
+    static let stakkaNumeric = Font.system(.body, design: .monospaced)
+        .monospacedDigit()
+        .weight(.medium)
+    static let stakkaNumericLarge = Font.system(.title, design: .monospaced)
+        .monospacedDigit()
+        .weight(.semibold)
 }
 
 // MARK: - Spacing (Enhanced for touch targets)

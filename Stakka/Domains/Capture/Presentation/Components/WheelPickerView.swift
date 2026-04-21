@@ -30,8 +30,13 @@ struct WheelPickerOverlay<T: Hashable>: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.4)
+            // Layered scrim: ultra-thin material gives depth on top of the
+            // live preview, the darker overlay keeps contrast high enough for
+            // the white picker text (WCAG AA).
+            Rectangle()
+                .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
+                .overlay(Color.black.opacity(0.35).ignoresSafeArea())
                 .onTapGesture {
                     withAnimation(AnimationPreset.smooth) {
                         onDismiss()

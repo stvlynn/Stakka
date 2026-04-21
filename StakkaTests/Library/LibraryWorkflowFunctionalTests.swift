@@ -141,7 +141,9 @@ final class LibraryWorkflowFunctionalTests: XCTestCase {
             registerProject: RegisterStackProjectUseCase(processor: processor),
             runStacking: RunStackingUseCase(processor: processor),
             exportStackedImage: ExportStackedImageUseCase(repository: photoRepository),
-            prepareTIFFExport: PrepareStackedTIFFExportUseCase()
+            prepareTIFFExport: PrepareStackedTIFFExportUseCase(),
+            persistStackResult: PersistStackResultUseCase(repository: stackRepository),
+            loadStackResult: LoadStackResultUseCase(repository: stackRepository)
         )
     }
 
@@ -190,6 +192,7 @@ private struct FakePhotoLibraryRepository: PhotoLibraryRepository {
 private actor InMemoryStackProjectRepository: StackProjectRepository {
     private var projects: [UUID: StackingProject]
     private var recentProjectID: UUID?
+    private var resultImages: [UUID: UIImage] = [:]
 
     init(project: StackingProject? = nil) {
         if let project {
@@ -209,6 +212,10 @@ private actor InMemoryStackProjectRepository: StackProjectRepository {
         projects[id]
     }
 
+    func loadResultImage(id: UUID) async throws -> UIImage? {
+        resultImages[id]
+    }
+
     func loadProjectSummaries() async throws -> [StackProjectSummary] {
         projects.values.map { project in
             StackProjectSummary(
@@ -217,7 +224,12 @@ private actor InMemoryStackProjectRepository: StackProjectRepository {
                 updatedAt: Date(),
                 totalFrameCount: project.frames.count,
                 lightFrameCount: project.enabledLightFrames.count,
-                cometMode: project.cometMode
+                cometMode: project.cometMode,
+                // In-memory stand-in: we can't surface a real file URL, but
+                // a marker URL lets tests assert "project has result".
+                resultThumbnailURL: resultImages[project.id] != nil
+                    ? URL(string: "memory://\(project.id.uuidString)")
+                    : nil
             )
         }
     }
@@ -225,6 +237,10 @@ private actor InMemoryStackProjectRepository: StackProjectRepository {
     func save(_ project: StackingProject) async throws {
         projects[project.id] = project
         recentProjectID = project.id
+    }
+
+    func saveResult(_ image: UIImage, for projectID: UUID) async throws {
+        resultImages[projectID] = image
     }
 
     func duplicateProject(id: UUID) async throws -> StackingProject {
@@ -265,7 +281,8 @@ private final class FakeStackingProcessor: StackingProcessor {
 
     private(set) var stackCallCount = 0
 
-    func analyze(_ project: StackingProject) async throws -> StackingProject {
+    func analyze(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject {
+        _ = progress
         var project = project
         project.referenceFrameID = project.enabledLightFrames.first?.id
         project.frames = project.frames.map { frame in
@@ -283,8 +300,8 @@ private final class FakeStackingProcessor: StackingProcessor {
         return project
     }
 
-    func register(_ project: StackingProject) async throws -> StackingProject {
-        var project = try await analyze(project)
+    func register(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject {
+        var project = try await analyze(project, progress: progress)
         project.frames = project.frames.map { frame in
             StackFrame(
                 id: frame.id,
@@ -302,7 +319,8 @@ private final class FakeStackingProcessor: StackingProcessor {
         return project
     }
 
-    func stack(_ project: StackingProject) async throws -> StackingResult {
+    func stack(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingResult {
+        _ = progress
         stackCallCount += 1
         let image = TestImageFactory.starField(stars: [CGPoint(x: 24, y: 24), CGPoint(x: 48, y: 48)])
         return StackingResult(

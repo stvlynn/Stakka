@@ -50,6 +50,10 @@ final class LibraryStackingViewModel: ObservableObject {
     @Published private(set) var pendingTIFFExport: StackedTIFFExport?
     @Published var isPresentingTIFFExporter = false
     @Published private(set) var thumbnailCache: [UUID: UIImage] = [:]
+    /// Live pipeline progress. `nil` while idle; populated with per-stage
+    /// frame counts and timing while a pipeline run is in flight so the
+    /// detail view can render a real progress bar, ETA, and throughput.
+    @Published private(set) var pipelineProgress: PipelineProgress?
 
     private let importPhotos: ImportPhotosUseCase
     private let loadRecentProject: LoadRecentStackProjectUseCase
@@ -65,6 +69,8 @@ final class LibraryStackingViewModel: ObservableObject {
     private let runStacking: RunStackingUseCase
     private let exportStackedImage: ExportStackedImageUseCase
     private let prepareTIFFExport: PrepareStackedTIFFExportUseCase
+    private let persistStackResult: PersistStackResultUseCase
+    private let loadStackResult: LoadStackResultUseCase
     private var hasLoadedRecentProject = false
     private var persistTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
@@ -83,7 +89,9 @@ final class LibraryStackingViewModel: ObservableObject {
         registerProject: RegisterStackProjectUseCase,
         runStacking: RunStackingUseCase,
         exportStackedImage: ExportStackedImageUseCase,
-        prepareTIFFExport: PrepareStackedTIFFExportUseCase
+        prepareTIFFExport: PrepareStackedTIFFExportUseCase,
+        persistStackResult: PersistStackResultUseCase,
+        loadStackResult: LoadStackResultUseCase
     ) {
         self.importPhotos = importPhotos
         self.loadRecentProject = loadRecentProject
@@ -99,6 +107,8 @@ final class LibraryStackingViewModel: ObservableObject {
         self.runStacking = runStacking
         self.exportStackedImage = exportStackedImage
         self.prepareTIFFExport = prepareTIFFExport
+        self.persistStackResult = persistStackResult
+        self.loadStackResult = loadStackResult
         observeRecentProjectChanges()
     }
 
@@ -114,9 +124,12 @@ final class LibraryStackingViewModel: ObservableObject {
         guard thumbnailCache[projectID] == nil else { return }
 
         Task {
-            if let loadedProject = try? await loadProject.execute(id: projectID),
-               let firstLight = loadedProject.enabledLightFrames.first {
-                thumbnailCache[projectID] = firstLight.image
+            // Prefer the persisted stack result so the gallery shows the
+            // final image for completed projects. If no result exists, we
+            // simply leave the entry unset — the gallery now filters out
+            // projects without a result image anyway.
+            if let resultImage = try? await loadStackResult.execute(projectID: projectID) {
+                thumbnailCache[projectID] = resultImage
             }
         }
     }
@@ -322,6 +335,106 @@ final class LibraryStackingViewModel: ObservableObject {
         }
     }
 
+    /// One-shot pipeline driven by the redesigned detail view's single
+    /// "Start Stacking" button. Runs analyze → register → stack, reporting
+    /// per-frame progress and persisting the result so the gallery can
+    /// display completed projects.
+    func runPipeline() {
+        guard phase == .idle else { return }
+        guard project.enabledLightFrames.count >= 2 else { return }
+
+        errorMessage = nil
+        phase = .analyzing
+        let projectID = project.id
+        // Fresh progress tracker — starts at 0/0 so the UI can render a
+        // "starting…" state before any frame reports back.
+        pipelineProgress = PipelineProgress(stage: .analyzing, completed: 0, total: 0, startedAt: Date())
+
+        // `@Sendable` callback bridging actor-isolated processor → main
+        // actor ViewModel state.
+        let reporter: StackingProgressReporter = { [weak self] stage, completed, total in
+            Task { @MainActor [weak self] in
+                self?.pipelineProgress = PipelineProgress(
+                    stage: stage,
+                    completed: completed,
+                    total: total,
+                    startedAt: self?.pipelineProgress?.startedAt(for: stage) ?? Date()
+                )
+            }
+        }
+
+        Task {
+            do {
+                let analyzed = try await self.analyzeProject.execute(project: self.project, progress: reporter)
+                self.project = analyzed
+
+                self.phase = .registering
+                let registered = try await self.registerProject.execute(project: analyzed, progress: reporter)
+                self.project = registered
+
+                self.phase = .stacking
+                let stacked = try await self.runStacking.execute(project: registered, progress: reporter)
+                self.result = stacked
+
+                // Persist both the project state (frame analysis /
+                // registrations) and the stacked image so the gallery tile
+                // can render the result on next launch.
+                try? await self.persistStackResult.execute(image: stacked.image, projectID: projectID)
+                self.thumbnailCache[projectID] = stacked.image
+                self.schedulePersistence()
+            } catch {
+                self.errorMessage = error.localizedDescription
+            }
+
+            self.phase = .idle
+            self.pipelineProgress = nil
+        }
+    }
+
+    /// `true` when there are enough light frames to kick off the pipeline.
+    var canRunPipeline: Bool {
+        !isWorking && project.enabledLightFrames.count >= 2
+    }
+
+    /// Loads the previously persisted stack result for a given project and
+    /// promotes it to the current session so the detail view can display it
+    /// without re-running the pipeline. No-op if the project has no
+    /// persisted result yet.
+    func restoreResult(for projectID: UUID) async {
+        guard project.id == projectID else { return }
+        if result != nil { return }
+        guard let image = try? await loadStackResult.execute(projectID: projectID) else { return }
+        result = LibraryStackingViewModel.restoredResult(image: image, for: project)
+    }
+
+    /// Rebuilds a minimal `StackingResult` from a project + previously
+    /// persisted image. We can't reconstruct per-frame `tiffData`, so
+    /// export-as-TIFF is disabled until a fresh run happens; this is
+    /// surfaced in the UI by leaving the TIFF button hidden unless the
+    /// result was produced during the current session.
+    private static func restoredResult(image: UIImage, for project: StackingProject) -> StackingResult {
+        let lightCount = project.enabledLightFrames.count
+        let referenceName = project.referenceFrameID.flatMap { project.frame(id: $0)?.name } ?? ""
+        let recap = StackingRecap(
+            referenceFrameName: referenceName,
+            usedLightFrameCount: lightCount,
+            darkFrameCount: project.frames(of: .dark).filter(\.isEnabled).count,
+            flatFrameCount: project.frames(of: .flat).filter(\.isEnabled).count,
+            darkFlatFrameCount: project.frames(of: .darkFlat).filter(\.isEnabled).count,
+            biasFrameCount: project.frames(of: .bias).filter(\.isEnabled).count,
+            cometMode: project.cometMode,
+            annotatedFrameCount: project.cometAnnotations.count,
+            manuallyAdjustedFrameCount: project.cometAnnotations.values.filter(\.isUserAdjusted).count
+        )
+        return StackingResult(
+            image: image,
+            tiffData: Data(),
+            frameCount: lightCount,
+            mode: project.mode,
+            recap: recap
+        )
+    }
+
     func saveResult() {
         guard let image = result?.image else { return }
 
@@ -459,3 +572,50 @@ final class LibraryStackingViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 }
+
+// MARK: - Pipeline Progress
+
+/// Live progress snapshot consumed by the detail view's status bar. Carries
+/// enough to derive fraction, ETA, and frames-per-second without additional
+/// timers inside the View layer.
+struct PipelineProgress: Equatable {
+    let stage: StackingProgressStage
+    let completed: Int
+    let total: Int
+    /// When the *current* stage started. Resets on stage change so ETA
+    /// estimates don't blend numbers from earlier (differently-sized)
+    /// stages.
+    let startedAt: Date
+
+    /// Overall fraction within the current stage, clamped to `0...1`.
+    var stageFraction: Double {
+        guard total > 0 else { return 0 }
+        return min(1, max(0, Double(completed) / Double(total)))
+    }
+
+    /// Frames processed per second within the current stage. Returns 0
+    /// until at least one frame has completed (avoids an infinity).
+    var framesPerSecond: Double {
+        let elapsed = max(0.001, Date().timeIntervalSince(startedAt))
+        guard completed > 0 else { return 0 }
+        return Double(completed) / elapsed
+    }
+
+    /// Estimated time remaining within the current stage, based on the
+    /// observed throughput so far. `nil` while we don't have enough data
+    /// (either no progress yet, or total is unknown).
+    var estimatedRemaining: TimeInterval? {
+        guard total > 0, completed > 0, completed < total else { return nil }
+        let rate = framesPerSecond
+        guard rate > 0 else { return nil }
+        return Double(total - completed) / rate
+    }
+
+    /// Returns the stored `startedAt` when the stage hasn't changed, or the
+    /// current time (to reset elapsed measurement) when the stage just
+    /// transitioned. Used when the ViewModel merges callback updates.
+    func startedAt(for incomingStage: StackingProgressStage) -> Date {
+        incomingStage == stage ? startedAt : Date()
+    }
+}
+

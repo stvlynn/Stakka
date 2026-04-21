@@ -317,6 +317,40 @@ enum StackingError: Error, LocalizedError {
 
 protocol StackingProcessor {
     func analyze(_ project: StackingProject) async throws -> StackingProject
+    func analyze(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject
+
     func register(_ project: StackingProject) async throws -> StackingProject
+    func register(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject
+
     func stack(_ project: StackingProject) async throws -> StackingResult
+    func stack(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingResult
+}
+
+// Default bridge: the new callback-aware methods stay optional for callers
+// that don't care about progress. Implementations only need to override the
+// callback variants; the no-arg overloads stay usable for compatibility.
+extension StackingProcessor {
+    func analyze(_ project: StackingProject) async throws -> StackingProject {
+        try await analyze(project, progress: nil)
+    }
+    func register(_ project: StackingProject) async throws -> StackingProject {
+        try await register(project, progress: nil)
+    }
+    func stack(_ project: StackingProject) async throws -> StackingResult {
+        try await stack(project, progress: nil)
+    }
+}
+
+/// Coarse-grained progress callback used to report per-frame work during
+/// analyze / register / stack.
+///
+/// `completed` and `total` are in *frames*; call-sites should use frame
+/// counts rather than derived percentages so the ViewModel can compute
+/// throughput (frames/sec) and ETAs deterministically.
+typealias StackingProgressReporter = @Sendable (_ stage: StackingProgressStage, _ completed: Int, _ total: Int) -> Void
+
+enum StackingProgressStage: Sendable, Equatable {
+    case analyzing
+    case registering
+    case stacking
 }

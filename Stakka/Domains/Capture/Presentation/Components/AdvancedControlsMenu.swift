@@ -127,9 +127,8 @@ struct AdvancedControlsMenu: View {
         Button(action: action) {
             VStack(spacing: Spacing.xs) {
                 Text(value)
-                    .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                    .font(.stakkaNumericLarge)
                     .foregroundStyle(isActive ? Color.cosmicBlue : Color.starWhite)
-                    .monospacedDigit()
 
                 Image(systemName: icon)
                     .font(.system(size: 14))
@@ -156,18 +155,17 @@ struct AdvancedControlsMenu: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(Color.textTertiary)
                     Text(value)
-                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                        .font(.stakkaNumericSmall)
                         .foregroundStyle(Color.starWhite)
-                        .monospacedDigit()
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color.textMuted)
             }
             .padding(.horizontal, Spacing.md)

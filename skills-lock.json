@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "922315d983642407e6d6a15c507be100f446090142f7df87883f8cf866df376b"
     },
+    "mobile-ios-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3902f919488d8ddc983e157bbcd5f16b739b84eeaab57002bf52b7f9601ed6ad"
+    },
     "swiftui-expert-skill": {
       "source": "avdlee/swiftui-agent-skill",
       "sourceType": "github",

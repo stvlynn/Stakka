@@ -5,7 +5,10 @@ struct AnalyzeStackProjectUseCase {
         self.processor = processor
     }
 
-    func execute(project: StackingProject) async throws -> StackingProject {
-        try await processor.analyze(project)
+    func execute(
+        project: StackingProject,
+        progress: StackingProgressReporter? = nil
+    ) async throws -> StackingProject {
+        try await processor.analyze(project, progress: progress)
     }
 }

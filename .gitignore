@@ -9,3 +9,8 @@ DerivedData/
 *.swiftdoc
 *.swiftsourceinfo
 xcuserdata/
+
+# Build artifacts (xcodebuild -derivedDataPath build)
+build/
+.codebuddy/
+/tmp-review/

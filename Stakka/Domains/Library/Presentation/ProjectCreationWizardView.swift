@@ -12,8 +12,20 @@ struct ProjectCreationWizardView: View {
     @State private var flatItems: [PhotosPickerItem] = []
     @State private var darkFlatItems: [PhotosPickerItem] = []
     @State private var biasItems: [PhotosPickerItem] = []
+    @State private var activeExplainer: StackFrameKind?
+    /// Tracks whether any thumbnail is currently being dragged. When true the
+    /// wizard reveals a bottom drop-to-delete zone in place of the nav
+    /// buttons.
+    @State private var isDragging: Bool = false
+    /// Background task used to auto-clear `isDragging` if the system never
+    /// fires the drop callback (e.g. user drags off-screen and releases).
+    @State private var dragTimeoutTask: Task<Void, Never>?
 
-    private let totalSteps = 3
+    // 5-step flow: Mode → Light → Dark → Calibration (Flat+DarkFlat+Bias) → Review.
+    // Splitting Light/Dark/Calibration reduces the cognitive load of the old
+    // single-page importer (five photo pickers stacked together) and lets
+    // beginners focus on one concept at a time.
+    private let totalSteps = 5
 
     var body: some View {
         NavigationStack {
@@ -27,14 +39,22 @@ struct ProjectCreationWizardView: View {
 
                     TabView(selection: $currentStep) {
                         modeStep.tag(0)
-                        framesStep.tag(1)
-                        reviewStep.tag(2)
+                        lightStep.tag(1)
+                        darkStep.tag(2)
+                        calibrationStep.tag(3)
+                        reviewStep.tag(4)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .animation(AnimationPreset.smooth, value: currentStep)
 
-                    navigationButtons
+                    // Bottom dock: shares the slot between the wizard's nav
+                    // buttons and the red drop-to-delete zone. Sharing the
+                    // slot (rather than overlaying) avoids the layering bug
+                    // where the drop zone would disappear behind the
+                    // navigation chrome as the user dragged towards it.
+                    bottomDock
                         .padding(Spacing.md)
+                        .animation(AnimationPreset.springBouncy, value: isDragging)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -44,7 +64,14 @@ struct ProjectCreationWizardView: View {
                         Image(systemName: "xmark")
                             .foregroundStyle(Color.starWhite)
                     }
+                    .accessibilityLabel(L10n.Common.done)
+                    .accessibilityIdentifier("wizard.cancel")
                 }
+            }
+            .sheet(item: $activeExplainer) { kind in
+                FrameExplainerSheet(kind: kind)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
             }
         }
     }
@@ -146,14 +173,14 @@ struct ProjectCreationWizardView: View {
         }
     }
 
-    // MARK: - Step 2: Import Frames
+    // MARK: - Step 2: Light Frames (required)
 
-    private var framesStep: some View {
+    private var lightStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 stepHeader(
-                    title: L10n.Wizard.stepFrames,
-                    explanation: L10n.Wizard.stepFramesExplanation
+                    title: L10n.Wizard.stepLight,
+                    explanation: L10n.Wizard.stepLightExplanation
                 )
 
                 frameImportSection(
@@ -162,10 +189,56 @@ struct ProjectCreationWizardView: View {
                     isRequired: true
                 )
 
+                if lightItems.count < 2 {
+                    requiredHint
+                }
+            }
+            .padding(Spacing.md)
+        }
+    }
+
+    private var requiredHint: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "info.circle")
+                .foregroundStyle(Color.cosmicBlue)
+            Text(L10n.Wizard.lightFramesRequired)
+                .font(.stakkaSmall)
+                .foregroundStyle(Color.textSecondary)
+        }
+        .padding(Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.cosmicBlue.opacity(0.08))
+        .continuousCorners(CornerRadius.md)
+    }
+
+    // MARK: - Step 3: Dark Frames (optional)
+
+    private var darkStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                stepHeader(
+                    title: L10n.Wizard.stepDark,
+                    explanation: L10n.Wizard.stepDarkExplanation
+                )
+
                 frameImportSection(
                     kind: .dark,
                     items: $darkItems,
                     isRequired: false
+                )
+            }
+            .padding(Spacing.md)
+        }
+    }
+
+    // MARK: - Step 4: Calibration Frames (Flat + DarkFlat + Bias, all optional)
+
+    private var calibrationStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                stepHeader(
+                    title: L10n.Wizard.stepCalibration,
+                    explanation: L10n.Wizard.stepCalibrationExplanation
                 )
 
                 frameImportSection(
@@ -185,24 +258,12 @@ struct ProjectCreationWizardView: View {
                     items: $biasItems,
                     isRequired: false
                 )
-
-                if lightItems.count < 2 {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "info.circle")
-                            .foregroundStyle(Color.cosmicBlue)
-                        Text(L10n.Wizard.lightFramesRequired)
-                            .font(.stakkaSmall)
-                            .foregroundStyle(Color.textSecondary)
-                    }
-                    .padding(Spacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.cosmicBlue.opacity(0.08))
-                    .continuousCorners(CornerRadius.md)
-                }
             }
             .padding(Spacing.md)
         }
     }
+
+    // MARK: - Frame Import Section
 
     private func frameImportSection(
         kind: StackFrameKind,
@@ -210,7 +271,7 @@ struct ProjectCreationWizardView: View {
         isRequired: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack {
+            HStack(spacing: Spacing.xs) {
                 Image(systemName: kind.symbolName)
                     .foregroundStyle(Color.cosmicBlue)
                 Text(kind.title)
@@ -221,7 +282,29 @@ struct ProjectCreationWizardView: View {
                 if isRequired {
                     Text("*")
                         .foregroundStyle(Color.galaxyPink)
+                } else {
+                    Text(L10n.Wizard.optional)
+                        .font(.stakkaSmall)
+                        .foregroundStyle(Color.textTertiary)
+                        .padding(.horizontal, Spacing.xs)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(Color.spaceSurfaceElevated.opacity(0.6))
+                        )
                 }
+
+                // "?" icon opens an explainer sheet. Keeps the page visually
+                // calm while still teaching newcomers what each frame is for.
+                Button {
+                    activeExplainer = kind
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                        .foregroundStyle(Color.textSecondary)
+                        .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.Wizard.learnMore)
 
                 Spacer()
 
@@ -251,12 +334,21 @@ struct ProjectCreationWizardView: View {
                         .stroke(Color.cosmicBlue.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [6]))
                 )
             }
+
+            // Once the user has imported photos, show a horizontally
+            // scrollable strip of 64pt thumbnails. Each tile is draggable
+            // (long-press) — releasing on the bottom delete zone removes it.
+            WizardThumbnailStrip(
+                kind: kind,
+                items: items,
+                onDragBegan: beginDragging
+            )
         }
         .padding(Spacing.md)
         .glassCard()
     }
 
-    // MARK: - Step 3: Review
+    // MARK: - Step 5: Review
 
     private var reviewStep: some View {
         ScrollView {
@@ -307,6 +399,24 @@ struct ProjectCreationWizardView: View {
 
     // MARK: - Navigation Buttons
 
+    /// Switches the bottom dock between the standard wizard buttons and the
+    /// red "drop here to remove" zone. Sharing the slot avoids the layering
+    /// problem we hit before, where a separately layered drop zone could be
+    /// hidden behind the safe-area chrome / nav buttons.
+    @ViewBuilder
+    private var bottomDock: some View {
+        if isDragging {
+            WizardDropToDeleteOverlay(
+                onDrop: handleDropDelete,
+                onDragEnded: endDragging
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        } else {
+            navigationButtons
+                .transition(.opacity)
+        }
+    }
+
     private var navigationButtons: some View {
         HStack(spacing: Spacing.md) {
             if currentStep > 0 {
@@ -321,14 +431,17 @@ struct ProjectCreationWizardView: View {
                     }
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.starWhite)
+                    // Ghost / secondary style — de-emphasises "Back" so the
+                    // primary forward action stays visually dominant.
+                    .foregroundStyle(Color.textSecondary)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Spacing.touchTarget)
                     .background(
                         RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .fill(Color.spaceSurfaceElevated)
+                            .stroke(Color.starWhite.opacity(0.15), lineWidth: 1)
                     )
                 }
+                .buttonStyle(.plain)
             }
 
             if currentStep < totalSteps - 1 {
@@ -348,9 +461,10 @@ struct ProjectCreationWizardView: View {
                     .frame(minHeight: Spacing.touchTarget)
                     .background(
                         RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .fill(Color.cosmicBlue)
+                            .fill(canAdvanceFromCurrentStep ? Color.cosmicBlue : Color.spaceSurfaceElevated)
                     )
                 }
+                .disabled(!canAdvanceFromCurrentStep)
             } else {
                 Button {
                     let frames = collectFrameGroups()
@@ -383,6 +497,15 @@ struct ProjectCreationWizardView: View {
         lightItems.count >= 2
     }
 
+    /// Only the Light step enforces a minimum count. All other optional steps
+    /// let the user move forward freely.
+    private var canAdvanceFromCurrentStep: Bool {
+        switch currentStep {
+        case 1: return lightItems.count >= 2
+        default: return true
+        }
+    }
+
     private func collectFrameGroups() -> [WizardFrameGroup] {
         var groups: [WizardFrameGroup] = []
         if !lightItems.isEmpty { groups.append(WizardFrameGroup(kind: .light, items: lightItems)) }
@@ -391,6 +514,55 @@ struct ProjectCreationWizardView: View {
         if !darkFlatItems.isEmpty { groups.append(WizardFrameGroup(kind: .darkFlat, items: darkFlatItems)) }
         if !biasItems.isEmpty { groups.append(WizardFrameGroup(kind: .bias, items: biasItems)) }
         return groups
+    }
+
+    /// Resolves a drag payload back to the matching items array and removes
+    /// the dropped photo. Provides haptic feedback so the deletion feels
+    /// tangible even though it happens off-screen.
+    private func handleDropDelete(_ ref: WizardFrameItemRef) {
+        guard let kind = StackFrameKind(rawValue: ref.kindRaw) else {
+            endDragging()
+            return
+        }
+        let removed: Bool
+        switch kind {
+        case .light: removed = removeItem(matching: ref.itemKey, from: &lightItems)
+        case .dark: removed = removeItem(matching: ref.itemKey, from: &darkItems)
+        case .flat: removed = removeItem(matching: ref.itemKey, from: &flatItems)
+        case .darkFlat: removed = removeItem(matching: ref.itemKey, from: &darkFlatItems)
+        case .bias: removed = removeItem(matching: ref.itemKey, from: &biasItems)
+        }
+        if removed {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        endDragging()
+    }
+
+    private func removeItem(matching key: String, from items: inout [PhotosPickerItem]) -> Bool {
+        guard let index = items.firstIndex(where: { WizardThumbnailLoader.cacheKey(for: $0) == key }) else {
+            return false
+        }
+        items.remove(at: index)
+        return true
+    }
+
+    /// Called by each thumbnail when its drag preview appears. Flips the
+    /// shared `isDragging` flag and arms a safety timer that auto-clears
+    /// the flag if the OS never fires a drop / cancel callback (typical
+    /// when the user drags off-screen).
+    private func beginDragging() {
+        isDragging = true
+        dragTimeoutTask?.cancel()
+        dragTimeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 6_000_000_000) // 6s safety net
+            if !Task.isCancelled { isDragging = false }
+        }
+    }
+
+    private func endDragging() {
+        dragTimeoutTask?.cancel()
+        dragTimeoutTask = nil
+        isDragging = false
     }
 
     private func stepHeader(title: String, explanation: String) -> some View {
@@ -406,6 +578,50 @@ struct ProjectCreationWizardView: View {
         }
     }
 }
+
+// MARK: - Explainer Sheet
+
+private struct FrameExplainerSheet: View {
+    let kind: StackFrameKind
+
+    var body: some View {
+        ZStack {
+            Color.spaceBackground.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: kind.symbolName)
+                        .font(.title2)
+                        .foregroundStyle(Color.cosmicBlue)
+                    Text(kind.title)
+                        .font(.stakkaHeadline)
+                        .foregroundStyle(Color.starWhite)
+                }
+
+                Text(explainer)
+                    .font(.stakkaBody)
+                    .foregroundStyle(Color.textSecondary)
+                    .lineSpacing(4)
+
+                Spacer()
+            }
+            .padding(Spacing.lg)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .presentationBackground(Color.spaceBackground)
+    }
+
+    private var explainer: String {
+        switch kind {
+        case .light: return L10n.Wizard.lightExplainer
+        case .dark: return L10n.Wizard.darkExplainer
+        case .flat: return L10n.Wizard.flatExplainer
+        case .darkFlat: return L10n.Wizard.darkFlatExplainer
+        case .bias: return L10n.Wizard.biasExplainer
+        }
+    }
+}
+
+// MARK: - Supporting Types
 
 struct WizardFrameGroup {
     let kind: StackFrameKind

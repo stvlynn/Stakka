@@ -4,9 +4,18 @@ struct GalleryView: View {
     @StateObject private var viewModel: LibraryStackingViewModel
     @State private var isPresentingWizard = false
     @State private var navigateToProjectID: UUID?
+    @State private var previewSummary: StackProjectSummary?
 
     init(viewModel: LibraryStackingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    /// Projects shown in the gallery grid. We filter on `resultThumbnailURL`
+    /// so only completed stacks surface here — projects that were started
+    /// but never stacked (e.g. the user closed the wizard halfway) stay
+    /// hidden until they produce a result.
+    private var completedSummaries: [StackProjectSummary] {
+        viewModel.projectSummaries.filter { $0.resultThumbnailURL != nil }
     }
 
     var body: some View {
@@ -15,7 +24,7 @@ struct GalleryView: View {
                 Color.spaceBackground
                     .ignoresSafeArea()
 
-                if viewModel.projectSummaries.isEmpty && !viewModel.hasProjects {
+                if completedSummaries.isEmpty {
                     emptyState
                 } else {
                     galleryGrid
@@ -24,7 +33,7 @@ struct GalleryView: View {
                 VStack {
                     Spacer()
                     createButton
-                        .padding(.bottom, Spacing.lg)
+                        .padding(.bottom, Spacing.xl + Spacing.sm)
                 }
             }
             .navigationTitle(L10n.Gallery.title)
@@ -40,12 +49,26 @@ struct GalleryView: View {
             .fullScreenCover(isPresented: $isPresentingWizard) {
                 ProjectCreationWizardView { mode, frames in
                     let projectID = await viewModel.createProjectFromWizard(mode: mode, frames: frames)
-                    viewModel.stack()
                     isPresentingWizard = false
                     navigateToProjectID = projectID
+                    // Kick off the pipeline after the detail view has a
+                    // chance to mount so progress updates are observed.
+                    viewModel.runPipeline()
                 } onCancel: {
                     isPresentingWizard = false
                 }
+            }
+            .fullScreenCover(item: $previewSummary) { summary in
+                GalleryResultPreview(
+                    summary: summary,
+                    image: viewModel.thumbnailCache[summary.id],
+                    onOpenProject: {
+                        previewSummary = nil
+                        viewModel.openProject(id: summary.id)
+                        navigateToProjectID = summary.id
+                    },
+                    onDismiss: { previewSummary = nil }
+                )
             }
         }
     }
@@ -62,10 +85,14 @@ struct GalleryView: View {
                     .foregroundStyle(Color.starWhite)
                     .multilineTextAlignment(.center)
 
-                Text(L10n.Gallery.emptyHint)
-                    .font(.stakkaCaption)
-                    .foregroundStyle(Color.textSecondary)
-                    .multilineTextAlignment(.center)
+                HStack(spacing: Spacing.xs) {
+                    Text(L10n.Gallery.emptyHint)
+                        .multilineTextAlignment(.center)
+                    Image(systemName: "arrow.down")
+                        .imageScale(.small)
+                }
+                .font(.stakkaCaption)
+                .foregroundStyle(Color.textSecondary)
             }
         }
         .padding(Spacing.xl)
@@ -80,7 +107,7 @@ struct GalleryView: View {
                 ],
                 spacing: Spacing.sm
             ) {
-                ForEach(viewModel.projectSummaries) { summary in
+                ForEach(completedSummaries) { summary in
                     galleryTile(summary)
                 }
             }
@@ -91,8 +118,10 @@ struct GalleryView: View {
 
     private func galleryTile(_ summary: StackProjectSummary) -> some View {
         Button {
-            viewModel.openProject(id: summary.id)
-            navigateToProjectID = summary.id
+            // Gallery tap → full-screen result preview (not the detail
+            // page). The preview's "Open Project" CTA routes to the
+            // detail view on demand.
+            previewSummary = summary
         } label: {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 ZStack {
@@ -151,5 +180,7 @@ struct GalleryView: View {
                         .shadow(color: .cosmicBlue.opacity(0.5), radius: 12, x: 0, y: 4)
                 )
         }
+        .accessibilityLabel(L10n.Gallery.createProject)
+        .accessibilityIdentifier("gallery.fab.create")
     }
 }

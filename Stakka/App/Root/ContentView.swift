@@ -14,31 +14,33 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack {
-            Color.spaceBackground
-                .ignoresSafeArea()
+        TabView(selection: $selectedTab) {
+            darkSkyView
+                .tabItem {
+                    Label(L10n.Tab.map, systemImage: "map.fill")
+                }
+                .tag(0)
+                .accessibilityLabel(L10n.Tab.map)
+                .accessibilityIdentifier("tab.map")
 
-            TabView(selection: $selectedTab) {
-                darkSkyView
-                    .tabItem {
-                        Label(L10n.Tab.map, systemImage: "map.fill")
-                    }
-                    .tag(0)
+            cameraView
+                .tabItem {
+                    Label(L10n.Tab.capture, systemImage: "camera.fill")
+                }
+                .tag(1)
+                .accessibilityLabel(L10n.Tab.capture)
+                .accessibilityIdentifier("tab.capture")
 
-                cameraView
-                    .tabItem {
-                        Label(L10n.Tab.capture, systemImage: "camera.fill")
-                    }
-                    .tag(1)
-
-                galleryView
-                    .tabItem {
-                        Label(L10n.Tab.gallery, systemImage: "photo.on.rectangle.angled")
-                    }
-                    .tag(2)
-            }
-            .tint(.cosmicBlue)
+            galleryView
+                .tabItem {
+                    Label(L10n.Tab.gallery, systemImage: "photo.on.rectangle.angled")
+                }
+                .tag(2)
+                .accessibilityLabel(L10n.Tab.gallery)
+                .accessibilityIdentifier("tab.gallery")
         }
+        .tint(.cosmicBlue)
+        .background(Color.spaceBackground.ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
 }

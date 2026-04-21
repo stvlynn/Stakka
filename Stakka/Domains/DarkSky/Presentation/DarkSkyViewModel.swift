@@ -13,6 +13,11 @@ final class DarkSkyViewModel: ObservableObject {
     private let searchCompleter = MKLocalSearchCompleter()
     private var searchCompleterDelegate: SearchCompleterDelegate?
 
+    /// Neutral fallback used to seed the map on first launch without kicking
+    /// off a location-permission prompt. Matches the fallback used by
+    /// `CenterOnUserLocationUseCase` (Tokyo).
+    let defaultCoordinate = CLLocationCoordinate2D(latitude: 35.6824, longitude: 139.7690)
+
     let majorCities: [(coordinate: CLLocationCoordinate2D, name: String)] = [
         (CLLocationCoordinate2D(latitude: 39.9042, longitude: 116.4074), "Beijing"),
         (CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737), "Shanghai"),

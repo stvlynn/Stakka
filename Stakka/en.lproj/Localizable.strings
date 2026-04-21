@@ -15,7 +15,7 @@
 
 "gallery.title" = "Gallery";
 "gallery.empty" = "Your finished photos will appear here";
-"gallery.empty.hint" = "Tap + below to create your first stacking project";
+"gallery.empty.hint" = "Tap the button below to create your first stacking project";
 "gallery.create" = "New Project";
 
 "wizard.step.mode" = "Stacking Mode";
@@ -33,6 +33,25 @@
 "wizard.mode.median.hint" = "Great for removing satellites and planes. Uses the middle value so outliers disappear.";
 "wizard.mode.kappa.hint" = "Advanced. Rejects pixels that deviate too far from the mean, then averages the rest.";
 "wizard.mode.medianKappa.hint" = "Combines median rejection with kappa-sigma clipping for the cleanest result.";
+
+"wizard.step.light" = "Light Frames";
+"wizard.step.light.explanation" = "These are your actual photos of the night sky. Pick at least 2 — the more you add, the cleaner the final image.";
+"wizard.step.dark" = "Dark Frames";
+"wizard.step.dark.explanation" = "Optional. Dark frames cancel out sensor noise and hot pixels. Skip this step if you don't have any.";
+"wizard.step.calibration" = "Calibration Frames";
+"wizard.step.calibration.explanation" = "Optional. Flat and Bias frames correct vignetting and readout noise. Most casual captures don't need them.";
+"wizard.optional" = "Optional";
+"wizard.learnMore" = "Learn more";
+"wizard.thumbnail.dragToDelete" = "Drop here to remove";
+"wizard.thumbnail.count" = "%@ photos imported";
+"wizard.thumbnail.loading" = "Loading";
+"wizard.preview.index" = "%@ / %@";
+"wizard.preview.close" = "Close";
+"wizard.explainer.light" = "Light frames are the photos you took of the stars. Stakka aligns and blends them together to boost the signal and smooth out noise.";
+"wizard.explainer.dark" = "Dark frames are shots taken with the lens cap on, using the same exposure and ISO as your Light frames. They expose sensor heat noise so Stakka can subtract it.";
+"wizard.explainer.flat" = "Flat frames are photos of an evenly lit surface (like the twilight sky) taken without moving the lens. They reveal vignetting and dust spots so Stakka can correct them.";
+"wizard.explainer.darkFlat" = "Dark Flats use the same exposure as your Flat frames but with the lens cap on. They remove the noise hidden inside the Flat frames themselves.";
+"wizard.explainer.bias" = "Bias frames are the shortest possible exposures with the lens capped. They capture your sensor's baseline readout pattern.";
 
 "darksky.title" = "Light Pollution Map";
 "darksky.marker" = "Dark Sky Point";
@@ -97,6 +116,17 @@
 "library.action.analyze" = "Analyze";
 "library.action.register" = "Register";
 "library.action.stack" = "Stack";
+"library.action.startStacking" = "Start Stacking";
+"library.section.frames" = "Frames";
+"library.result.placeholder" = "Your stacked night sky will appear here";
+"library.result.placeholderHint" = "Add light frames and tap Start Stacking to begin.";
+"library.progress.analyzing" = "Analyzing frames";
+"library.progress.registering" = "Aligning frames";
+"library.progress.stacking" = "Stacking frames";
+"library.progress.count" = "Frame %@ of %@";
+"library.progress.eta" = "about %@s left";
+"library.progress.throughput" = "%@ frames/s";
+"gallery.preview.openProject" = "Open Project";
 "library.hint.comet" = "After choosing a comet mode, register first to estimate the comet position, then review it.";
 "library.hint.reference" = "Use at least 2 %@ frames. The best-scoring frame becomes the reference, or set one manually.";
 "library.browser.title" = "Projects";

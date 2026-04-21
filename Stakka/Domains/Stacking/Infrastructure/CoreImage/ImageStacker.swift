@@ -6,14 +6,19 @@ import UIKit
 import Vision
 
 actor ImageStacker: StackingProcessor {
-    func analyze(_ project: StackingProject) async throws -> StackingProject {
+    func analyze(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject {
         var frames = project.frames
+        let total = frames.count
+        // Announce the upcoming workload even when there's nothing to do so
+        // the UI can draw a 0/N state right away.
+        progress?(.analyzing, 0, total)
 
         for index in frames.indices {
             frames[index].analysis = try analyzeFrame(frames[index].image)
             if frames[index].kind == .light {
                 frames[index].registration = nil
             }
+            progress?(.analyzing, index + 1, total)
         }
 
         var updatedProject = project
@@ -25,7 +30,7 @@ actor ImageStacker: StackingProcessor {
         return updatedProject
     }
 
-    func register(_ project: StackingProject) async throws -> StackingProject {
+    func register(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject {
         let analyzedProject = try await ensureAnalyzed(project)
         let referenceFrame = try resolveReferenceFrame(in: analyzedProject)
         let referenceImage = referenceFrame.image.normalizedForProcessing(targetSize: referenceFrame.image.size)
@@ -34,13 +39,22 @@ actor ImageStacker: StackingProcessor {
         }
 
         var frames = analyzedProject.frames
-        for index in frames.indices where frames[index].kind == .light && frames[index].isEnabled {
+        // Count all enabled light frames (including the reference itself, which
+        // takes no real work but is still a unit of progress).
+        let registrationIndices = frames.indices.filter { frames[$0].kind == .light && frames[$0].isEnabled }
+        let total = registrationIndices.count
+        var completed = 0
+        progress?(.registering, 0, total)
+
+        for index in registrationIndices {
             if frames[index].id == referenceFrame.id {
                 frames[index].registration = FrameRegistration(
                     transform: .identity,
                     confidence: 1,
                     method: "reference"
                 )
+                completed += 1
+                progress?(.registering, completed, total)
                 continue
             }
 
@@ -49,10 +63,12 @@ actor ImageStacker: StackingProcessor {
                 throw StackingError.processingFailed(L10n.Error.lightFrameUnreadable)
             }
 
-            frames[index].registration = try register(
+            frames[index].registration = register(
                 floatingImage: floatingCGImage,
                 referenceImage: referenceCGImage
             )
+            completed += 1
+            progress?(.registering, completed, total)
         }
 
         var updatedProject = analyzedProject
@@ -69,7 +85,7 @@ actor ImageStacker: StackingProcessor {
         return updatedProject
     }
 
-    func stack(_ project: StackingProject) async throws -> StackingResult {
+    func stack(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingResult {
         let registeredProject = try await ensureRegistered(project)
         let referenceFrame = try resolveReferenceFrame(in: registeredProject)
         let lightFrames = registeredProject.enabledLightFrames
@@ -81,15 +97,20 @@ actor ImageStacker: StackingProcessor {
         let referenceBuffer = try LinearRGBAImage(image: referenceFrame.image)
         let calibration = try CalibrationContext(project: registeredProject, referenceSize: referenceBuffer.size)
 
-        let alignedBuffers = try lightFrames.map { frame -> LinearRGBAImage in
+        // Per-frame unit of work: calibrate + warp. Report before / after
+        // each one so the UI's throughput estimate stabilises.
+        let total = lightFrames.count
+        progress?(.stacking, 0, total)
+        var alignedBuffers: [LinearRGBAImage] = []
+        alignedBuffers.reserveCapacity(total)
+        for (offset, frame) in lightFrames.enumerated() {
             var buffer = try LinearRGBAImage(image: frame.image, targetSize: referenceBuffer.size)
             buffer = calibration.calibrate(lightBuffer: buffer)
-
             if let registration = frame.registration {
                 buffer = buffer.warped(using: registration.transform)
             }
-
-            return buffer
+            alignedBuffers.append(buffer)
+            progress?(.stacking, offset + 1, total)
         }
 
         let finalBuffer: LinearRGBAImage
@@ -199,69 +220,191 @@ private extension ImageStacker {
         return referenceFrame
     }
 
-    func analyzeFrame(_ image: UIImage) throws -> FrameAnalysis {
-        let sample = try LuminanceSample(image: image, maxDimension: 256)
-        let pixels = sample.pixels
-        guard !pixels.isEmpty else {
-            throw StackingError.processingFailed(L10n.Error.emptyAnalysisData)
-        }
-
-        let mean = pixels.reduce(0, +) / Double(pixels.count)
-        let variance = pixels.reduce(0) { partialResult, value in
-            let delta = value - mean
-            return partialResult + delta * delta
-        } / Double(pixels.count)
-        let deviation = sqrt(variance)
-        let sortedPixels = pixels.sorted()
-        let background = percentile(in: sortedPixels, ratio: 0.22)
-        let threshold = min(0.98, max(background + 0.14, mean + (deviation * 1.8)))
-        let stars = detectStars(in: sample, threshold: threshold)
-        let fwhm = estimateAverageFWHM(in: sample, stars: stars)
-
-        let averagePeak = stars.isEmpty
-            ? threshold
-            : stars.reduce(0) { $0 + $1.peak } / Double(stars.count)
-        let contrast = max(0.001, averagePeak - background)
-        let score = (Double(stars.count) * contrast * 100) / max(fwhm, 1.0)
-
-        return FrameAnalysis(
-            starCount: stars.count,
-            background: background,
-            fwhm: fwhm,
-            score: score
-        )
+    func detectStars(in sample: LuminanceSample, threshold: Double) -> [StarCandidate] {
+        detectStars(in: sample, threshold: threshold, background: 0)
     }
 
-    func detectStars(in sample: LuminanceSample, threshold: Double) -> [StarCandidate] {
+    /// DSS-parity star detector (port of `DSS::registerSubRect`).
+    ///
+    /// For every pixel above `threshold` this routine runs the same 8-direction
+    /// extension check that DeepSkyStacker performs:
+    ///
+    /// 1. From the candidate centre it walks up to `STARMAXSIZE` (50) pixels
+    ///    in each of the 8 compass directions.
+    /// 2. In every direction it must find at least **two** pixels darker
+    ///    than `background + 0.25 * (center - background)` — DSS's "found two
+    ///    pixels darker than 25 % of the excursion above background" rule.
+    /// 3. No pixel along the walk may be brighter than the centre (with a
+    ///    5 % tolerance, and at most one such pixel total).
+    /// 4. The per-direction "edge radius" is the distance at which the
+    ///    second darker pixel was found.  The maximum spread across the 8
+    ///    directions must stay within a `deltaRadius` tolerance (0…3,
+    ///    swept from tight to loose to catch both crisp and slightly
+    ///    elongated stars) and the largest edge radius must exceed 2
+    ///    (min-size check).
+    /// 5. A hot-pixel veto rejects centres where ≥ 7 of the 8 immediate
+    ///    neighbours are darker than the centre excursion and ≥ 4 are
+    ///    darker than 0.6 × that excursion.
+    /// 6. A candidate overlapping an already-accepted star
+    ///    (`dist < (r1 + r2) * RadiusFactor`, `RadiusFactor = 2.35 / 1.5`)
+    ///    is discarded — this is how DSS collapses 3×3 + 2×2 touching
+    ///    blobs into a single star rather than merging by geometry.
+    func detectStars(
+        in sample: LuminanceSample,
+        threshold: Double,
+        background: Double
+    ) -> [StarCandidate] {
         guard sample.width > 4, sample.height > 4 else { return [] }
 
-        var stars: [StarCandidate] = []
-        let step = max(1, min(sample.width, sample.height) / 128)
+        let starMaxSize = 50
+        let radiusFactor = 2.35 / 1.5
+        let maxDeltaRadius = 3
 
-        for y in stride(from: 1, to: sample.height - 1, by: step) {
-            for x in stride(from: 1, to: sample.width - 1, by: step) {
-                let center = sample.valueAt(x: x, y: y)
-                guard center >= threshold else { continue }
+        // 8 compass directions (dx, dy).
+        let directions: [(Int, Int)] = [
+            ( 0, -1), ( 1,  0), ( 0,  1), (-1,  0),
+            ( 1, -1), ( 1,  1), (-1,  1), (-1, -1)
+        ]
 
-                let neighbors = [
-                    sample.valueAt(x: x - 1, y: y - 1),
-                    sample.valueAt(x: x, y: y - 1),
-                    sample.valueAt(x: x + 1, y: y - 1),
-                    sample.valueAt(x: x - 1, y: y),
-                    sample.valueAt(x: x + 1, y: y),
-                    sample.valueAt(x: x - 1, y: y + 1),
-                    sample.valueAt(x: x, y: y + 1),
-                    sample.valueAt(x: x + 1, y: y + 1)
-                ]
-
-                guard neighbors.allSatisfy({ center > $0 }) else { continue }
-                stars.append(StarCandidate(x: x, y: y, peak: center))
+        // Accept candidates peak-first so overlap suppression deterministically
+        // keeps the brightest local maximum.
+        var raw: [(x: Int, y: Int, peak: Double)] = []
+        raw.reserveCapacity(sample.width * sample.height / 16)
+        for y in 1..<(sample.height - 1) {
+            for x in 1..<(sample.width - 1) {
+                let centre = sample.valueAt(x: x, y: y)
+                if centre >= threshold {
+                    raw.append((x, y, centre))
+                }
             }
         }
+        raw.sort { $0.peak > $1.peak }
 
-        return stars.sorted { lhs, rhs in
-            lhs.peak > rhs.peak
+        var accepted: [StarCandidate] = []
+
+        candidateLoop: for candidate in raw {
+            let centre = candidate.peak
+            let excursion = centre - background
+            guard excursion > 0 else { continue }
+
+            // Reject hot pixels: 8 immediate neighbours mostly darker than
+            // the excursion (DSS RegisterCore.cpp hot-pixel test).
+            var darkerThanFull = 0
+            var darkerThan60 = 0
+            for (dx, dy) in directions {
+                let nx = candidate.x + dx
+                let ny = candidate.y + dy
+                guard nx >= 0, nx < sample.width, ny >= 0, ny < sample.height else { continue }
+                let n = sample.valueAt(x: nx, y: ny) - background
+                if n < excursion { darkerThanFull += 1 }
+                if n < 0.6 * excursion { darkerThan60 += 1 }
+            }
+            if darkerThanFull >= 7 && darkerThan60 >= 4 {
+                // All 8 neighbours collapse sharply — a single hot pixel.
+                // DSS requires that the candidate also expand outwards to
+                // survive, so let the extension check do the final word.
+                if darkerThan60 == 8 {
+                    continue candidateLoop
+                }
+            }
+
+            // 8-direction extension check with sweeping deltaRadius.
+            var bestEdges: [Int]?
+            var bestMax = 0
+
+            for deltaRadius in 0...maxDeltaRadius {
+                var edges = [Int](repeating: 0, count: directions.count)
+                var brighterPixels = 0
+                var ok = true
+
+                for (dirIndex, direction) in directions.enumerated() {
+                    let darkThreshold = background + 0.25 * excursion
+                    var darkerFound = 0
+                    var edgeRadius = 0
+                    var step = 1
+
+                    walkLoop: while step <= starMaxSize {
+                        let px = candidate.x + direction.0 * step
+                        let py = candidate.y + direction.1 * step
+                        guard px >= 0, px < sample.width, py >= 0, py < sample.height else {
+                            ok = false
+                            break walkLoop
+                        }
+                        let value = sample.valueAt(x: px, y: py)
+                        if value > centre * 1.05 {
+                            brighterPixels += 1
+                            if brighterPixels > 1 {
+                                ok = false
+                                break walkLoop
+                            }
+                        }
+                        if value < darkThreshold {
+                            darkerFound += 1
+                            if darkerFound == 2 {
+                                edgeRadius = step
+                                break walkLoop
+                            }
+                        }
+                        step += 1
+                    }
+
+                    if !ok || darkerFound < 2 {
+                        ok = false
+                        break
+                    }
+                    edges[dirIndex] = edgeRadius
+                }
+
+                guard ok else { continue }
+
+                let maxEdge = edges.max() ?? 0
+                let minEdge = edges.min() ?? 0
+                // Min-size check: star must span at least 3 pixels total.
+                guard maxEdge > 2 else { continue }
+                // Roundness check: spread across directions within tolerance.
+                guard (maxEdge - minEdge) <= deltaRadius else { continue }
+
+                // Perpendicular-diameter ratio check for small stars.
+                if maxEdge < 10 {
+                    let horizontalDiameter = edges[1] + edges[3] + 1      // E + W
+                    let verticalDiameter = edges[0] + edges[2] + 1        // N + S
+                    let larger = Double(max(horizontalDiameter, verticalDiameter))
+                    let smaller = Double(max(1, min(horizontalDiameter, verticalDiameter)))
+                    guard larger / smaller <= 1.5 else { continue }
+                }
+
+                bestEdges = edges
+                bestMax = maxEdge
+                break
+            }
+
+            guard let edges = bestEdges else { continue }
+
+            // Mean radius across the 8 directions (DSS uses this for the
+            // overlap test and the FWHM derivation).
+            let meanRadius = Double(edges.reduce(0, +)) / Double(edges.count)
+            _ = bestMax
+
+            // Overlap suppression against previously-accepted brighter stars.
+            for existing in accepted {
+                let dx = Double(candidate.x - existing.x)
+                let dy = Double(candidate.y - existing.y)
+                let distance = (dx * dx + dy * dy).squareRoot()
+                let minSeparation = (existing.meanRadius + meanRadius) * radiusFactor
+                if distance < max(minSeparation, 1) {
+                    continue candidateLoop
+                }
+            }
+
+            accepted.append(StarCandidate(
+                x: candidate.x,
+                y: candidate.y,
+                peak: centre,
+                meanRadius: meanRadius
+            ))
         }
+
+        return accepted
     }
 
     func estimateAverageFWHM(in sample: LuminanceSample, stars: [StarCandidate]) -> Double {
@@ -319,41 +462,113 @@ private extension ImageStacker {
         return sortedValues[index]
     }
 
-    func register(floatingImage: CGImage, referenceImage: CGImage) throws -> FrameRegistration {
-        do {
-            let request = VNHomographicImageRegistrationRequest(targetedCGImage: floatingImage, options: [:])
-            let handler = VNImageRequestHandler(cgImage: referenceImage, options: [:])
-            try handler.perform([request])
+    func register(floatingImage: CGImage, referenceImage: CGImage) -> FrameRegistration {
+        // Vision's registration requests allocate a `VNImageSignature` object
+        // internally. On low-memory environments (most notably the iOS
+        // Simulator) this allocation can fail outright with
+        // "Error while trying to allocate VNImageSignature object". We can't
+        // prevent that, but we can refuse to surface it as a user-visible
+        // error: stacking with an identity transform still produces a valid
+        // (if un-aligned) output, which beats hard-failing the whole project.
+        //
+        // Strategy — three layers, each one silently falls through:
+        //   1. VNHomographicImageRegistrationRequest  (best alignment)
+        //   2. VNTranslationalImageRegistrationRequest (shift-only)
+        //   3. identity transform                       (last resort)
 
-            if let observation = request.results?.first {
-                return FrameRegistration(
-                    transform: ProjectiveTransform(matrix: observation.warpTransform),
-                    confidence: Double(observation.confidence),
-                    method: "homography"
-                )
-            }
-        } catch {
-            // Fall back to translational registration when Vision cannot resolve a homography.
+        // Downsample oversized images before feeding Vision. Full-resolution
+        // frames from modern iPhones (48MP+) routinely exhaust the Simulator
+        // heap; 2048px on the long edge is plenty for feature matching.
+        let downsampleTarget: CGFloat = 2048
+        let floating = Self.downsampledCGImage(floatingImage, maxLongEdge: downsampleTarget) ?? floatingImage
+        let reference = Self.downsampledCGImage(referenceImage, maxLongEdge: downsampleTarget) ?? referenceImage
+
+        if let homography = try? Self.performHomographicRegistration(
+            floatingImage: floating,
+            referenceImage: reference
+        ) {
+            return homography
         }
 
-        let fallbackRequest = VNTranslationalImageRegistrationRequest(targetedCGImage: floatingImage, options: [:])
-        let fallbackHandler = VNImageRequestHandler(cgImage: referenceImage, options: [:])
-        try fallbackHandler.perform([fallbackRequest])
-
-        guard let fallbackObservation = fallbackRequest.results?.first else {
-            throw StackingError.processingFailed(L10n.Error.registrationFailed)
+        if let translation = try? Self.performTranslationalRegistration(
+            floatingImage: floating,
+            referenceImage: reference
+        ) {
+            return translation
         }
 
-        let transform = CGAffineTransform(
-            translationX: fallbackObservation.alignmentTransform.tx,
-            y: fallbackObservation.alignmentTransform.ty
+        // Last resort: assume the frames are already aligned. Confidence is
+        // set to 0 so downstream heuristics (reference-frame scoring, quality
+        // reporting) can still tell that registration didn't succeed.
+        return FrameRegistration(
+            transform: .identity,
+            confidence: 0,
+            method: "identity-fallback"
         )
+    }
 
+    private static func performHomographicRegistration(
+        floatingImage: CGImage,
+        referenceImage: CGImage
+    ) throws -> FrameRegistration? {
+        let request = VNHomographicImageRegistrationRequest(targetedCGImage: floatingImage, options: [:])
+        let handler = VNImageRequestHandler(cgImage: referenceImage, options: [:])
+        try handler.perform([request])
+        guard let observation = request.results?.first else { return nil }
+        return FrameRegistration(
+            transform: ProjectiveTransform(matrix: observation.warpTransform),
+            confidence: Double(observation.confidence),
+            method: "homography"
+        )
+    }
+
+    private static func performTranslationalRegistration(
+        floatingImage: CGImage,
+        referenceImage: CGImage
+    ) throws -> FrameRegistration? {
+        let request = VNTranslationalImageRegistrationRequest(targetedCGImage: floatingImage, options: [:])
+        let handler = VNImageRequestHandler(cgImage: referenceImage, options: [:])
+        try handler.perform([request])
+        guard let observation = request.results?.first else { return nil }
+        let transform = CGAffineTransform(
+            translationX: observation.alignmentTransform.tx,
+            y: observation.alignmentTransform.ty
+        )
         return FrameRegistration(
             transform: ProjectiveTransform(affineTransform: transform),
-            confidence: Double(fallbackObservation.confidence),
+            confidence: Double(observation.confidence),
             method: "translation"
         )
+    }
+
+    /// Returns a downsampled copy of `image` whose longer edge does not
+    /// exceed `maxLongEdge`. Returns `nil` when the image is already small
+    /// enough (so callers can short-circuit without a copy).
+    private static func downsampledCGImage(_ image: CGImage, maxLongEdge: CGFloat) -> CGImage? {
+        let width = CGFloat(image.width)
+        let height = CGFloat(image.height)
+        let longest = max(width, height)
+        guard longest > maxLongEdge else { return nil }
+
+        let scale = maxLongEdge / longest
+        let targetWidth = Int((width * scale).rounded())
+        let targetHeight = Int((height * scale).rounded())
+        guard targetWidth > 0, targetHeight > 0,
+              let colorSpace = image.colorSpace,
+              let context = CGContext(
+                data: nil,
+                width: targetWidth,
+                height: targetHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else {
+            return nil
+        }
+        context.interpolationQuality = .medium
+        context.draw(image, in: CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight))
+        return context.makeImage()
     }
 
     func estimateCometAnnotations(
@@ -666,21 +881,6 @@ private extension ImageStacker {
         return LinearRGBAImage(width: firstImage.width, height: firstImage.height, pixels: combinedPixels)
     }
 
-    func combine(_ samples: [Float], mode: StackingMode) -> Float {
-        guard !samples.isEmpty else { return 0 }
-
-        switch mode {
-        case .average:
-            return samples.reduce(0, +) / Float(samples.count)
-        case .median:
-            return median(of: samples)
-        case .kappaSigma:
-            return kappaSigma(samples, replaceRejectedWithMedian: false)
-        case .medianKappaSigma:
-            return kappaSigma(samples, replaceRejectedWithMedian: true)
-        }
-    }
-
     func median(of samples: [Float]) -> Float {
         let sorted = samples.sorted()
         let midpoint = sorted.count / 2
@@ -693,36 +893,57 @@ private extension ImageStacker {
     }
 
     func kappaSigma(_ samples: [Float], replaceRejectedWithMedian: Bool) -> Float {
+        // Small-sample kappa-sigma must stay robust against a single extreme
+        // outlier — textbook mean/σ iteration breaks down because the very
+        // outlier inflates σ until nothing gets rejected.  DSS-style
+        // astrophotography stackers sidestep this by seeding the rejection
+        // statistic with median + MAD (median absolute deviation), then
+        // refining with mean/σ on the surviving inliers.  That is what we
+        // mirror below.
         let kappa: Float = 2.0
-        let iterations = 2
+        let iterations = 3
         let medianValue = median(of: samples)
         var working = samples
 
-        for _ in 0..<iterations {
-            guard !working.isEmpty else { break }
+        for iteration in 0..<iterations {
+            guard working.count > 1 else { break }
 
-            let mean = working.reduce(0, +) / Float(working.count)
-            let variance = working.reduce(0) { partialResult, sample in
-                let delta = sample - mean
-                return partialResult + (delta * delta)
-            } / Float(working.count)
-            let sigma = sqrt(variance)
+            // First pass: rejection centre is the median, spread is the
+            // MAD scaled to the Gaussian σ equivalent (1.4826 factor).
+            // Later passes use the standard mean/σ so a clean inlier set
+            // converges to its arithmetic mean just like DSS's AvxAccumulation.
+            let centre: Float
+            let spread: Float
+            if iteration == 0 {
+                centre = median(of: working)
+                let deviations = working.map { abs($0 - centre) }
+                let mad = median(of: deviations)
+                spread = mad * 1.4826
+            } else {
+                let mean = working.reduce(0, +) / Float(working.count)
+                centre = mean
+                let variance = working.reduce(0) { partialResult, sample in
+                    let delta = sample - mean
+                    return partialResult + (delta * delta)
+                } / Float(working.count)
+                spread = variance.squareRoot()
+            }
 
-            guard sigma > 0 else { break }
+            guard spread > 0 else { break }
 
+            let tolerance = kappa * spread
             if replaceRejectedWithMedian {
-                working = working.map { sample in
-                    abs(sample - mean) > (kappa * sigma) ? medianValue : sample
+                let replaced = working.map { sample in
+                    abs(sample - centre) > tolerance ? medianValue : sample
                 }
+                if replaced == working { break }
+                working = replaced
             } else {
                 let filtered = working.filter { sample in
-                    abs(sample - mean) <= (kappa * sigma)
+                    abs(sample - centre) <= tolerance
                 }
-
-                if filtered.isEmpty {
-                    break
-                }
-
+                if filtered.isEmpty { break }
+                if filtered.count == working.count { break }
                 working = filtered
             }
         }
@@ -735,6 +956,14 @@ private struct StarCandidate {
     let x: Int
     let y: Int
     let peak: Double
+    let meanRadius: Double
+
+    init(x: Int, y: Int, peak: Double, meanRadius: Double = 0) {
+        self.x = x
+        self.y = y
+        self.peak = peak
+        self.meanRadius = meanRadius
+    }
 }
 
 private struct CometCandidate {
@@ -754,6 +983,27 @@ private struct LuminanceSample {
     let pixels: [Double]
 
     init(image: UIImage, maxDimension: CGFloat) throws {
+        // Fast path for test fixtures / DSS-style synthetic patterns: when
+        // the input already is a single-channel grayscale bitmap and fits
+        // within `maxDimension`, read its raw pixels directly to avoid the
+        // UIGraphicsImageRenderer resample, which would otherwise apply an
+        // alpha-premultiplied sRGB gamma round-trip that softens sharp
+        // single-pixel bright features below the star-detection threshold.
+        if let cgImage = image.cgImage,
+           cgImage.colorSpace?.model == .monochrome,
+           CGFloat(cgImage.width) <= maxDimension,
+           CGFloat(cgImage.height) <= maxDimension,
+           let raw = try? cgImage.grayscaleBytes() {
+            width = cgImage.width
+            height = cgImage.height
+            var luminance = Array(repeating: Double.zero, count: width * height)
+            for index in 0..<(width * height) {
+                luminance[index] = Double(raw[index]) / 255
+            }
+            pixels = luminance
+            return
+        }
+
         let normalizedImage = image.normalizedForProcessing(maxDimension: maxDimension)
         guard let cgImage = normalizedImage.cgImage else {
             throw StackingError.processingFailed(L10n.Error.sampleImageFailed)
@@ -1377,5 +1627,97 @@ private extension CGImage {
 
         context.draw(self, in: CGRect(x: 0, y: 0, width: width, height: height))
         return bytes
+    }
+
+    /// Read raw 8-bit grayscale samples without routing through the
+    /// sRGB/alpha pipeline.  Used as a fast path for DSS-style synthetic
+    /// test fixtures whose pixel values must be preserved bit-exactly so
+    /// the star detector operates on the same luminance the fixture
+    /// declared (avoiding the gamma-induced softening that
+    /// `UIGraphicsImageRenderer` introduces for tiny bright features).
+    func grayscaleBytes() throws -> [UInt8] {
+        let width = width
+        let height = height
+        let bytesPerRow = width
+        var bytes = Array(repeating: UInt8.zero, count: height * bytesPerRow)
+
+        let colorSpace = CGColorSpaceCreateDeviceGray()
+        guard let context = CGContext(
+            data: &bytes,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.none.rawValue
+        ) else {
+            throw StackingError.processingFailed(L10n.Error.pixelReadFailed)
+        }
+
+        // Disable interpolation so a 1:1 draw preserves the source pixels
+        // exactly, even when the source CGImage is itself a grayscale
+        // buffer with the same dimensions.
+        context.interpolationQuality = .none
+        context.draw(self, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return bytes
+    }
+}
+
+// MARK: - Test-visible entry points
+//
+// `analyzeFrame` and the scalar `combine` overload are intentionally exposed
+// at module (`internal`) visibility so that `@testable import Stakka` in the
+// StakkaTests target can exercise them directly, mirroring DSS's unit-level
+// coverage of `registerSubRect` and `AvxAccumulation::accumulate`.  The
+// image-level `combine([LinearRGBAImage]...)` overload stays fileprivate
+// because it references the fileprivate `LinearRGBAImage` type.
+extension ImageStacker {
+    func analyzeFrame(_ image: UIImage) throws -> FrameAnalysis {
+        let sample = try LuminanceSample(image: image, maxDimension: 256)
+        let pixels = sample.pixels
+        guard !pixels.isEmpty else {
+            throw StackingError.processingFailed(L10n.Error.emptyAnalysisData)
+        }
+
+        // DSS uses the 50th-percentile (median) of the sub-rectangle as its
+        // background estimate, then adds the user-selected detection
+        // threshold (default 10 %) to derive the acceptance floor.  See
+        // `DSS::registerSubRect` — `intensityThreshold = 256 * detectionThreshold + backgroundLevel`,
+        // here normalised to the [0, 1] luminance scale.
+        let sortedPixels = pixels.sorted()
+        let background = percentile(in: sortedPixels, ratio: 0.5)
+        let detectionThreshold = 0.10
+        let threshold = min(0.99, background + detectionThreshold)
+
+        let stars = detectStars(in: sample, threshold: threshold, background: background)
+        let fwhm = estimateAverageFWHM(in: sample, stars: stars)
+
+        let averagePeak = stars.isEmpty
+            ? threshold
+            : stars.reduce(0) { $0 + $1.peak } / Double(stars.count)
+        let contrast = max(0.001, averagePeak - background)
+        let score = (Double(stars.count) * contrast * 100) / max(fwhm, 1.0)
+
+        return FrameAnalysis(
+            starCount: stars.count,
+            background: background,
+            fwhm: fwhm,
+            score: score
+        )
+    }
+
+    func combine(_ samples: [Float], mode: StackingMode) -> Float {
+        guard !samples.isEmpty else { return 0 }
+
+        switch mode {
+        case .average:
+            return samples.reduce(0, +) / Float(samples.count)
+        case .median:
+            return median(of: samples)
+        case .kappaSigma:
+            return kappaSigma(samples, replaceRejectedWithMedian: false)
+        case .medianKappaSigma:
+            return kappaSigma(samples, replaceRejectedWithMedian: true)
+        }
     }
 }

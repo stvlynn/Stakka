@@ -46,6 +46,14 @@ targets:
         NSCameraUsageDescription: "Stakka needs camera access to capture astrophotography images"
         NSPhotoLibraryUsageDescription: "Stakka needs photo library access to stack your images"
         NSLocationWhenInUseUsageDescription: "Stakka needs your location to show light pollution data"
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.stakka.wizard.frameRef
+            UTTypeDescription: Stakka Wizard Frame Reference
+            UTTypeConformsTo:
+              - public.data
+            UTTypeTagSpecification:
+              public.mime-type:
+                - application/x-stakka-wizard-frame-ref
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

@@ -2,11 +2,18 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Redesigned project detail view. Visual hierarchy, from top to bottom:
+///
+/// 1. Hero (`StackProjectHeroView`) — result image or placeholder + title.
+/// 2. Mode pickers (stacking mode, comet mode) — compact horizontal rows.
+/// 3. Comet review status card (only when comet mode is on).
+/// 4. Collapsible frame list (`StackFrameListSection`).
+/// 5. Sticky bottom action bar (`StackActionBar`) with a single "Start
+///    Stacking" CTA and in-line toasts for errors and in-progress state.
 struct LibraryStackingView: View {
     @ObservedObject private var viewModel: LibraryStackingViewModel
     @State private var isPresentingCometReview = false
     @State private var cometReviewStartFrameID: UUID?
-    @State private var isPresentingProjectBrowser = false
     private let openProjectID: UUID?
 
     init(viewModel: LibraryStackingViewModel, openProjectID: UUID? = nil) {
@@ -19,87 +26,67 @@ struct LibraryStackingView: View {
             Color.spaceBackground
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: Spacing.lg) {
-                    StackProjectSummaryCard(project: viewModel.project)
-
-                    if viewModel.project.frames.isEmpty {
-                        introCard
-                    }
-
-                    StackingModePickerView(
-                        selectedMode: viewModel.project.mode,
-                        onSelect: viewModel.setMode
-                    )
-
-                    CometModePickerView(
-                        selectedMode: viewModel.project.cometMode,
-                        onSelect: viewModel.setCometMode
-                    )
-
-                    if let cometMode = viewModel.project.cometMode {
-                        CometReviewStatusCard(
-                            mode: cometMode,
-                            reviewedCount: viewModel.cometReviewedCount,
-                            totalCount: viewModel.cometReviewFrameIDs.count,
-                            needsReviewCount: viewModel.project.enabledFramesNeedingCometReview.count,
-                            onReview: {
-                                openCometReview(startingFrameID: viewModel.firstCometReviewFrameID)
-                            }
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: Spacing.lg) {
+                        StackProjectHeroView(
+                            project: viewModel.project,
+                            result: viewModel.result,
+                            onSave: viewModel.saveResult,
+                            onExportTIFF: viewModel.prepareResultTIFFExport
                         )
-                    }
 
-                    if viewModel.phase != .idle {
-                        ProcessingStatusCard(phase: viewModel.phase)
-                    }
+                        StackingModePickerView(
+                            selectedMode: viewModel.project.mode,
+                            onSelect: viewModel.setMode
+                        )
 
-                    if let errorMessage = viewModel.errorMessage {
-                        errorCard(message: errorMessage)
-                    }
+                        CometModePickerView(
+                            selectedMode: viewModel.project.cometMode,
+                            onSelect: viewModel.setCometMode
+                        )
 
-                    ForEach(StackFrameKind.allCases) { kind in
-                        StackFrameSectionView(
-                            kind: kind,
-                            frames: viewModel.project.frames(of: kind),
+                        if let cometMode = viewModel.project.cometMode {
+                            CometReviewStatusCard(
+                                mode: cometMode,
+                                reviewedCount: viewModel.cometReviewedCount,
+                                totalCount: viewModel.cometReviewFrameIDs.count,
+                                needsReviewCount: viewModel.project.enabledFramesNeedingCometReview.count,
+                                onReview: {
+                                    openCometReview(startingFrameID: viewModel.firstCometReviewFrameID)
+                                }
+                            )
+                        }
+
+                        StackFrameListSection(
+                            project: viewModel.project,
                             isWorking: viewModel.isWorking,
-                            referenceFrameID: viewModel.project.referenceFrameID,
-                            cometModeEnabled: viewModel.hasCometModeEnabled,
                             cometAnnotations: viewModel.project.cometAnnotations,
-                            onImport: { items in
+                            hasCometMode: viewModel.hasCometModeEnabled,
+                            onImport: { kind, items in
                                 await viewModel.importFrames(from: items, kind: kind)
                             },
-                            onImportFiles: { urls in
+                            onImportFiles: { kind, urls in
                                 await viewModel.importFrames(from: urls, kind: kind)
                             },
-                            onClear: {
-                                viewModel.clearGroup(kind)
-                            },
-                            onToggle: { frameID in
-                                viewModel.toggleFrame(frameID)
-                            },
-                            onRemove: { frameID in
-                                viewModel.removeFrame(frameID)
-                            },
-                            onSetReference: { frameID in
-                                viewModel.setReferenceFrame(frameID)
-                            },
-                            onEditComet: { frameID in
-                                openCometReview(startingFrameID: frameID)
-                            }
+                            onClear: { kind in viewModel.clearGroup(kind) },
+                            onToggle: { viewModel.toggleFrame($0) },
+                            onRemove: { viewModel.removeFrame($0) },
+                            onSetReference: { viewModel.setReferenceFrame($0) },
+                            onEditComet: { openCometReview(startingFrameID: $0) }
                         )
                     }
-
-                    actionPanel
-
-                    if let result = viewModel.result {
-                        StackedResultCard(result: result) {
-                            viewModel.saveResult()
-                        } onExportTIFF: {
-                            viewModel.prepareResultTIFFExport()
-                        }
-                    }
+                    .padding(Spacing.md)
+                    .padding(.bottom, Spacing.lg) // breathing room above sticky bar
                 }
-                .padding(Spacing.md)
+
+                StackActionBar(
+                    phase: viewModel.phase,
+                    errorMessage: viewModel.errorMessage,
+                    progress: viewModel.pipelineProgress,
+                    isEnabled: viewModel.canRunPipeline,
+                    action: viewModel.runPipeline
+                )
             }
         }
         .navigationTitle(L10n.Library.title)
@@ -109,6 +96,10 @@ struct LibraryStackingView: View {
         .task {
             if let openProjectID {
                 viewModel.openProject(id: openProjectID)
+                // If the project already has a persisted result, surface it
+                // immediately so the hero section shows the stacked image
+                // even before any action.
+                await viewModel.restoreResult(for: openProjectID)
             } else {
                 await viewModel.loadRecentProjectIfNeeded()
             }
@@ -134,171 +125,9 @@ struct LibraryStackingView: View {
                 }
             )
         }
-        .sheet(isPresented: $isPresentingProjectBrowser) {
-            StackProjectBrowserView(
-                currentProjectID: viewModel.project.id,
-                summaries: viewModel.projectSummaries,
-                onOpen: viewModel.openProject,
-                onDuplicate: viewModel.duplicateProject,
-                onDelete: viewModel.deleteProject,
-                onCreate: viewModel.createNewProject
-            )
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    isPresentingProjectBrowser = true
-                } label: {
-                    Image(systemName: "books.vertical")
-                        .foregroundStyle(Color.starWhite)
-                }
-                .accessibilityLabel(L10n.Accessibility.openProjects)
-            }
-
-            if !viewModel.project.frames.isEmpty {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(L10n.Common.new) {
-                        viewModel.createNewProject()
-                    }
-                    .foregroundStyle(Color.galaxyPink)
-                }
-            }
-        }
-    }
-
-    private var introCard: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Image(systemName: "sparkles.rectangle.stack.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(Color.cosmicBlue)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.Library.introTitle)
-                        .font(.stakkaHeadline)
-                        .foregroundStyle(Color.starWhite)
-                    Text(L10n.Library.introSubtitle)
-                        .font(.stakkaCaption)
-                        .foregroundStyle(Color.textSecondary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.md)
-        .glassCard()
-    }
-
-    private var actionPanel: some View {
-        VStack(spacing: Spacing.md) {
-            HStack(spacing: Spacing.sm) {
-                actionButton(
-                    title: L10n.Library.analyze,
-                    symbol: "viewfinder",
-                    isPrimary: false,
-                    isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.isEmpty,
-                    action: viewModel.analyze
-                )
-
-                actionButton(
-                    title: L10n.Library.register,
-                    symbol: "scope",
-                    isPrimary: false,
-                    isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
-                    action: viewModel.register
-                )
-
-                actionButton(
-                    title: L10n.Library.stack,
-                    symbol: "square.stack.3d.up.fill",
-                    isPrimary: true,
-                    isDisabled: viewModel.isWorking || viewModel.project.enabledLightFrames.count < 2,
-                    action: viewModel.stack
-                )
-            }
-
-            Text(actionHint)
-                .font(.stakkaSmall)
-                .foregroundStyle(Color.textTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineSpacing(2)
-        }
-        .padding(Spacing.md)
-        .glassCard()
-    }
-
-    private func actionButton(
-        title: String,
-        symbol: String,
-        isPrimary: Bool,
-        isDisabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.xs) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .semibold))
-                Text(title)
-                    .font(.stakkaSmall)
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 56)
-            .foregroundStyle(isDisabled ? Color.textMuted : (isPrimary ? Color.starWhite : Color.starWhite))
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                    .fill(
-                        isDisabled
-                            ? Color.spaceSurfaceElevated.opacity(0.4)
-                            : (isPrimary ? Color.cosmicBlue : Color.spaceSurfaceElevated)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .stroke(
-                                isDisabled ? Color.clear : (isPrimary ? Color.cosmicBlue.opacity(0.5) : Color.starWhite.opacity(0.08)),
-                                lineWidth: 1
-                            )
-                    )
-            )
-            .shadow(
-                color: isPrimary && !isDisabled ? Color.cosmicBlue.opacity(0.35) : .clear,
-                radius: 8, x: 0, y: 4
-            )
-        }
-        .disabled(isDisabled)
-        .animation(AnimationPreset.transition, value: isDisabled)
-    }
-
-    private func errorCard(message: String) -> some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(Color.galaxyPink)
-
-            Text(message)
-                .font(.stakkaCaption)
-                .foregroundStyle(Color.starWhite)
-                .lineSpacing(2)
-
-            Spacer()
-        }
-        .padding(Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                .fill(Color.galaxyPink.opacity(0.15))
-                .overlay(
-                    RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                        .stroke(Color.galaxyPink.opacity(0.3), lineWidth: 1)
-                )
-        )
-        .shadow(color: Color.galaxyPink.opacity(0.2), radius: 8, x: 0, y: 2)
-    }
-
-    private var actionHint: String {
-        if viewModel.project.cometMode != nil {
-            return L10n.Library.cometHint
-        }
-
-        return L10n.Library.referenceHint(lightTitle: StackFrameKind.light.title)
+        // Project browser and "New" toolbar entries were removed per the
+        // redesign — navigation is handled entirely by the gallery and the
+        // system back button.
     }
 
     private func openCometReview(startingFrameID: UUID?) {

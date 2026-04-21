@@ -17,6 +17,7 @@ enum L10n {
         static var confirm: String { L10n.text("common.confirm", default: "Confirm") }
         static var new: String { L10n.text("common.new", default: "New") }
         static var open: String { L10n.text("common.open", default: "Open") }
+        static var close: String { L10n.text("common.close", default: "Close") }
         static var duplicate: String { L10n.text("common.duplicate", default: "Duplicate") }
         static var delete: String { L10n.text("common.delete", default: "Delete") }
         static var save: String { L10n.text("common.save", default: "Save") }
@@ -34,7 +35,7 @@ enum L10n {
         static var title: String { L10n.text("gallery.title", default: "Gallery") }
         static var empty: String { L10n.text("gallery.empty", default: "Your finished photos will appear here") }
         static var emptyHint: String {
-            L10n.text("gallery.empty.hint", default: "Tap + below to create your first stacking project")
+            L10n.text("gallery.empty.hint", default: "Tap the button below to create your first stacking project")
         }
         static var createProject: String { L10n.text("gallery.create", default: "New Project") }
     }
@@ -54,6 +55,79 @@ enum L10n {
                 default: "Add at least 2 Light frames — these are your main photos of the night sky. Optionally add Dark, Flat, and Bias calibration frames for cleaner results."
             )
         }
+
+        // Split import steps (Light → Dark → Flat+Bias)
+        static var stepLight: String { L10n.text("wizard.step.light", default: "Light Frames") }
+        static var stepLightExplanation: String {
+            L10n.text(
+                "wizard.step.light.explanation",
+                default: "These are your actual photos of the night sky. Pick at least 2 — the more you add, the cleaner the final image."
+            )
+        }
+        static var stepDark: String { L10n.text("wizard.step.dark", default: "Dark Frames") }
+        static var stepDarkExplanation: String {
+            L10n.text(
+                "wizard.step.dark.explanation",
+                default: "Optional. Dark frames cancel out sensor noise and hot pixels. Skip this step if you don't have any."
+            )
+        }
+        static var stepCalibration: String { L10n.text("wizard.step.calibration", default: "Calibration Frames") }
+        static var stepCalibrationExplanation: String {
+            L10n.text(
+                "wizard.step.calibration.explanation",
+                default: "Optional. Flat and Bias frames correct vignetting and readout noise. Most casual captures don't need them."
+            )
+        }
+        static var optional: String { L10n.text("wizard.optional", default: "Optional") }
+        static var learnMore: String { L10n.text("wizard.learnMore", default: "Learn more") }
+        static var dragToDelete: String {
+            L10n.text("wizard.thumbnail.dragToDelete", default: "Drop here to remove")
+        }
+        static var photoCount: String {
+            L10n.text("wizard.thumbnail.count", default: "%@ photos imported")
+        }
+        static func photoIndex(current: Int, total: Int) -> String {
+            L10n.format("wizard.preview.index", default: "%@ / %@", String(current), String(total))
+        }
+        static var previewClose: String {
+            L10n.text("wizard.preview.close", default: "Close")
+        }
+        static var loadingThumbnail: String {
+            L10n.text("wizard.thumbnail.loading", default: "Loading")
+        }
+
+        // Frame-kind explainers (shown in the info popover)
+        static var lightExplainer: String {
+            L10n.text(
+                "wizard.explainer.light",
+                default: "Light frames are the photos you took of the stars. Stakka aligns and blends them together to boost the signal and smooth out noise."
+            )
+        }
+        static var darkExplainer: String {
+            L10n.text(
+                "wizard.explainer.dark",
+                default: "Dark frames are shots taken with the lens cap on, using the same exposure and ISO as your Light frames. They expose sensor heat noise so Stakka can subtract it."
+            )
+        }
+        static var flatExplainer: String {
+            L10n.text(
+                "wizard.explainer.flat",
+                default: "Flat frames are photos of an evenly lit surface (like the twilight sky) taken without moving the lens. They reveal vignetting and dust spots so Stakka can correct them."
+            )
+        }
+        static var darkFlatExplainer: String {
+            L10n.text(
+                "wizard.explainer.darkFlat",
+                default: "Dark Flats use the same exposure as your Flat frames but with the lens cap on. They remove the noise hidden inside the Flat frames themselves."
+            )
+        }
+        static var biasExplainer: String {
+            L10n.text(
+                "wizard.explainer.bias",
+                default: "Bias frames are the shortest possible exposures with the lens capped. They capture your sensor's baseline readout pattern."
+            )
+        }
+
         static var stepReview: String { L10n.text("wizard.step.review", default: "Review & Start") }
         static var stepReviewExplanation: String {
             L10n.text(
@@ -172,6 +246,33 @@ enum L10n {
         static var analyze: String { L10n.text("library.action.analyze", default: "Analyze") }
         static var register: String { L10n.text("library.action.register", default: "Register") }
         static var stack: String { L10n.text("library.action.stack", default: "Stack") }
+        // New single-button pipeline label used by the redesigned detail view.
+        static var startStacking: String { L10n.text("library.action.startStacking", default: "Start Stacking") }
+        static var frameSection: String { L10n.text("library.section.frames", default: "Frames") }
+        static var resultPlaceholder: String {
+            L10n.text("library.result.placeholder", default: "Your stacked night sky will appear here")
+        }
+        static var resultPlaceholderHint: String {
+            L10n.text(
+                "library.result.placeholderHint",
+                default: "Add light frames and tap Start Stacking to begin."
+            )
+        }
+        // Progress — per-stage captions
+        static var progressAnalyzing: String { L10n.text("library.progress.analyzing", default: "Analyzing frames") }
+        static var progressRegistering: String { L10n.text("library.progress.registering", default: "Aligning frames") }
+        static var progressStacking: String { L10n.text("library.progress.stacking", default: "Stacking frames") }
+        static func progressCount(current: Int, total: Int) -> String {
+            L10n.format("library.progress.count", default: "Frame %@ of %@", String(current), String(total))
+        }
+        static func progressEta(seconds: Int) -> String {
+            L10n.format("library.progress.eta", default: "about %@s left", String(seconds))
+        }
+        static func progressThroughput(fps: String) -> String {
+            L10n.format("library.progress.throughput", default: "%@ frames/s", fps)
+        }
+        // Gallery preview
+        static var openProject: String { L10n.text("gallery.preview.openProject", default: "Open Project") }
         static var cometHint: String {
             L10n.text(
                 "library.hint.comet",
@@ -389,5 +490,80 @@ enum L10n {
         static var reviewCometAnnotation: String {
             L10n.text("a11y.library.reviewComet", default: "Review comet annotation")
         }
+    }
+
+    enum Permissions {
+        // Location
+        static var locationTitle: String {
+            L10n.text("permissions.location.title", default: "Find your night sky")
+        }
+        static var locationBody: String {
+            L10n.text(
+                "permissions.location.body",
+                default: "Stakka uses your location to show the light pollution level where you are and to suggest nearby dark-sky spots."
+            )
+        }
+        static var locationAllow: String {
+            L10n.text("permissions.location.allow", default: "Allow Location")
+        }
+        static var locationDeniedTitle: String {
+            L10n.text("permissions.location.denied.title", default: "Location access is off")
+        }
+        static var locationDeniedBody: String {
+            L10n.text(
+                "permissions.location.denied.body",
+                default: "Location permission is disabled. Open Settings to turn it back on so Stakka can center the map on you."
+            )
+        }
+
+        // Camera
+        static var cameraTitle: String {
+            L10n.text("permissions.camera.title", default: "Ready to capture the stars")
+        }
+        static var cameraBody: String {
+            L10n.text(
+                "permissions.camera.body",
+                default: "Stakka needs camera access to run a long-exposure stacking session and record each frame of the night sky."
+            )
+        }
+        static var cameraAllow: String {
+            L10n.text("permissions.camera.allow", default: "Allow Camera")
+        }
+        static var cameraDeniedTitle: String {
+            L10n.text("permissions.camera.denied.title", default: "Camera access is off")
+        }
+        static var cameraDeniedBody: String {
+            L10n.text(
+                "permissions.camera.denied.body",
+                default: "Camera permission is disabled. Open Settings to turn it on so Stakka can stream the live preview."
+            )
+        }
+
+        // Photos
+        static var photosTitle: String {
+            L10n.text("permissions.photos.title", default: "Bring in your photos")
+        }
+        static var photosBody: String {
+            L10n.text(
+                "permissions.photos.body",
+                default: "Stakka needs access to your photo library to import the frames you want to stack."
+            )
+        }
+        static var photosAllow: String {
+            L10n.text("permissions.photos.allow", default: "Allow Photos")
+        }
+        static var photosDeniedTitle: String {
+            L10n.text("permissions.photos.denied.title", default: "Photos access is off")
+        }
+        static var photosDeniedBody: String {
+            L10n.text(
+                "permissions.photos.denied.body",
+                default: "Photo library permission is disabled. Open Settings to turn it on so Stakka can import your frames."
+            )
+        }
+
+        // Common actions
+        static var notNow: String { L10n.text("permissions.notNow", default: "Not Now") }
+        static var openSettings: String { L10n.text("permissions.openSettings", default: "Open Settings") }
     }
 }
