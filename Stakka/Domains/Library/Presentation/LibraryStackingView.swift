@@ -3,160 +3,164 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct LibraryStackingView: View {
-    @StateObject private var viewModel: LibraryStackingViewModel
+    @ObservedObject private var viewModel: LibraryStackingViewModel
     @State private var isPresentingCometReview = false
     @State private var cometReviewStartFrameID: UUID?
     @State private var isPresentingProjectBrowser = false
+    private let openProjectID: UUID?
 
-    init(viewModel: LibraryStackingViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+    init(viewModel: LibraryStackingViewModel, openProjectID: UUID? = nil) {
+        self.viewModel = viewModel
+        self.openProjectID = openProjectID
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.spaceBackground
-                    .ignoresSafeArea()
+        ZStack {
+            Color.spaceBackground
+                .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(spacing: Spacing.lg) {
-                        StackProjectSummaryCard(project: viewModel.project)
+            ScrollView {
+                VStack(spacing: Spacing.lg) {
+                    StackProjectSummaryCard(project: viewModel.project)
 
-                        if viewModel.project.frames.isEmpty {
-                            introCard
-                        }
+                    if viewModel.project.frames.isEmpty {
+                        introCard
+                    }
 
-                        StackingModePickerView(
-                            selectedMode: viewModel.project.mode,
-                            onSelect: viewModel.setMode
-                        )
+                    StackingModePickerView(
+                        selectedMode: viewModel.project.mode,
+                        onSelect: viewModel.setMode
+                    )
 
-                        CometModePickerView(
-                            selectedMode: viewModel.project.cometMode,
-                            onSelect: viewModel.setCometMode
-                        )
+                    CometModePickerView(
+                        selectedMode: viewModel.project.cometMode,
+                        onSelect: viewModel.setCometMode
+                    )
 
-                        if let cometMode = viewModel.project.cometMode {
-                            CometReviewStatusCard(
-                                mode: cometMode,
-                                reviewedCount: viewModel.cometReviewedCount,
-                                totalCount: viewModel.cometReviewFrameIDs.count,
-                                needsReviewCount: viewModel.project.enabledFramesNeedingCometReview.count,
-                                onReview: {
-                                    openCometReview(startingFrameID: viewModel.firstCometReviewFrameID)
-                                }
-                            )
-                        }
-
-                        if viewModel.phase != .idle {
-                            ProcessingStatusCard(phase: viewModel.phase)
-                        }
-
-                        if let errorMessage = viewModel.errorMessage {
-                            errorCard(message: errorMessage)
-                        }
-
-                        ForEach(StackFrameKind.allCases) { kind in
-                            StackFrameSectionView(
-                                kind: kind,
-                                frames: viewModel.project.frames(of: kind),
-                                isWorking: viewModel.isWorking,
-                                referenceFrameID: viewModel.project.referenceFrameID,
-                                cometModeEnabled: viewModel.hasCometModeEnabled,
-                                cometAnnotations: viewModel.project.cometAnnotations,
-                                onImport: { items in
-                                    await viewModel.importFrames(from: items, kind: kind)
-                                },
-                                onImportFiles: { urls in
-                                    await viewModel.importFrames(from: urls, kind: kind)
-                                },
-                                onClear: {
-                                    viewModel.clearGroup(kind)
-                                },
-                                onToggle: { frameID in
-                                    viewModel.toggleFrame(frameID)
-                                },
-                                onRemove: { frameID in
-                                    viewModel.removeFrame(frameID)
-                                },
-                                onSetReference: { frameID in
-                                    viewModel.setReferenceFrame(frameID)
-                                },
-                                onEditComet: { frameID in
-                                    openCometReview(startingFrameID: frameID)
-                                }
-                            )
-                        }
-
-                        actionPanel
-
-                        if let result = viewModel.result {
-                            StackedResultCard(result: result) {
-                                viewModel.saveResult()
-                            } onExportTIFF: {
-                                viewModel.prepareResultTIFFExport()
+                    if let cometMode = viewModel.project.cometMode {
+                        CometReviewStatusCard(
+                            mode: cometMode,
+                            reviewedCount: viewModel.cometReviewedCount,
+                            totalCount: viewModel.cometReviewFrameIDs.count,
+                            needsReviewCount: viewModel.project.enabledFramesNeedingCometReview.count,
+                            onReview: {
+                                openCometReview(startingFrameID: viewModel.firstCometReviewFrameID)
                             }
+                        )
+                    }
+
+                    if viewModel.phase != .idle {
+                        ProcessingStatusCard(phase: viewModel.phase)
+                    }
+
+                    if let errorMessage = viewModel.errorMessage {
+                        errorCard(message: errorMessage)
+                    }
+
+                    ForEach(StackFrameKind.allCases) { kind in
+                        StackFrameSectionView(
+                            kind: kind,
+                            frames: viewModel.project.frames(of: kind),
+                            isWorking: viewModel.isWorking,
+                            referenceFrameID: viewModel.project.referenceFrameID,
+                            cometModeEnabled: viewModel.hasCometModeEnabled,
+                            cometAnnotations: viewModel.project.cometAnnotations,
+                            onImport: { items in
+                                await viewModel.importFrames(from: items, kind: kind)
+                            },
+                            onImportFiles: { urls in
+                                await viewModel.importFrames(from: urls, kind: kind)
+                            },
+                            onClear: {
+                                viewModel.clearGroup(kind)
+                            },
+                            onToggle: { frameID in
+                                viewModel.toggleFrame(frameID)
+                            },
+                            onRemove: { frameID in
+                                viewModel.removeFrame(frameID)
+                            },
+                            onSetReference: { frameID in
+                                viewModel.setReferenceFrame(frameID)
+                            },
+                            onEditComet: { frameID in
+                                openCometReview(startingFrameID: frameID)
+                            }
+                        )
+                    }
+
+                    actionPanel
+
+                    if let result = viewModel.result {
+                        StackedResultCard(result: result) {
+                            viewModel.saveResult()
+                        } onExportTIFF: {
+                            viewModel.prepareResultTIFFExport()
                         }
                     }
-                    .padding(Spacing.md)
                 }
+                .padding(Spacing.md)
             }
-            .navigationTitle(L10n.Library.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .task {
+        }
+        .navigationTitle(L10n.Library.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .task {
+            if let openProjectID {
+                viewModel.openProject(id: openProjectID)
+            } else {
                 await viewModel.loadRecentProjectIfNeeded()
             }
-            .fileExporter(
-                isPresented: $viewModel.isPresentingTIFFExporter,
-                document: viewModel.pendingTIFFExport.map { StackedTIFFDocument(data: $0.data) },
-                contentType: .tiff,
-                defaultFilename: viewModel.pendingTIFFExport?.filename
-            ) { _ in
-                viewModel.clearPreparedTIFFExport()
-            }
-            .sheet(isPresented: $isPresentingCometReview) {
-                CometAnnotationReviewView(
-                    frames: viewModel.project.enabledLightFrames,
-                    annotations: viewModel.project.cometAnnotations,
-                    startingFrameID: cometReviewStartFrameID,
-                    onUpdatePoint: { frameID, point in
-                        viewModel.markCometPoint(point, for: frameID)
-                    },
-                    onUseEstimated: { frameID in
-                        viewModel.restoreEstimatedCometPoint(for: frameID)
-                    }
-                )
-            }
-            .sheet(isPresented: $isPresentingProjectBrowser) {
-                StackProjectBrowserView(
-                    currentProjectID: viewModel.project.id,
-                    summaries: viewModel.projectSummaries,
-                    onOpen: viewModel.openProject,
-                    onDuplicate: viewModel.duplicateProject,
-                    onDelete: viewModel.deleteProject,
-                    onCreate: viewModel.createNewProject
-                )
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        isPresentingProjectBrowser = true
-                    } label: {
-                        Image(systemName: "books.vertical")
-                            .foregroundStyle(Color.starWhite)
-                    }
-                    .accessibilityLabel(L10n.Accessibility.openProjects)
+        }
+        .fileExporter(
+            isPresented: $viewModel.isPresentingTIFFExporter,
+            document: viewModel.pendingTIFFExport.map { StackedTIFFDocument(data: $0.data) },
+            contentType: .tiff,
+            defaultFilename: viewModel.pendingTIFFExport?.filename
+        ) { _ in
+            viewModel.clearPreparedTIFFExport()
+        }
+        .sheet(isPresented: $isPresentingCometReview) {
+            CometAnnotationReviewView(
+                frames: viewModel.project.enabledLightFrames,
+                annotations: viewModel.project.cometAnnotations,
+                startingFrameID: cometReviewStartFrameID,
+                onUpdatePoint: { frameID, point in
+                    viewModel.markCometPoint(point, for: frameID)
+                },
+                onUseEstimated: { frameID in
+                    viewModel.restoreEstimatedCometPoint(for: frameID)
                 }
+            )
+        }
+        .sheet(isPresented: $isPresentingProjectBrowser) {
+            StackProjectBrowserView(
+                currentProjectID: viewModel.project.id,
+                summaries: viewModel.projectSummaries,
+                onOpen: viewModel.openProject,
+                onDuplicate: viewModel.duplicateProject,
+                onDelete: viewModel.deleteProject,
+                onCreate: viewModel.createNewProject
+            )
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    isPresentingProjectBrowser = true
+                } label: {
+                    Image(systemName: "books.vertical")
+                        .foregroundStyle(Color.starWhite)
+                }
+                .accessibilityLabel(L10n.Accessibility.openProjects)
+            }
 
-                if !viewModel.project.frames.isEmpty {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button(L10n.Common.new) {
-                            viewModel.createNewProject()
-                        }
-                        .foregroundStyle(Color.galaxyPink)
+            if !viewModel.project.frames.isEmpty {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(L10n.Common.new) {
+                        viewModel.createNewProject()
                     }
+                    .foregroundStyle(Color.galaxyPink)
                 }
             }
         }
