@@ -3,14 +3,14 @@ import SwiftUI
 struct ContentView: View {
     private let darkSkyView: DarkSkyMapView
     private let cameraView: CameraView
-    private let libraryView: LibraryStackingView
+    private let galleryView: GalleryView
 
     @State private var selectedTab = 0
 
     init(container: AppContainer) {
         darkSkyView = DarkSkyMapView(viewModel: container.makeDarkSkyViewModel())
         cameraView = CameraView(viewModel: container.makeCameraViewModel())
-        libraryView = LibraryStackingView(viewModel: container.makeLibraryViewModel())
+        galleryView = GalleryView(viewModel: container.makeLibraryViewModel())
     }
 
     var body: some View {
@@ -31,9 +31,9 @@ struct ContentView: View {
                     }
                     .tag(1)
 
-                libraryView
+                galleryView
                     .tabItem {
-                        Label(L10n.Tab.stacking, systemImage: "square.stack.3d.up.fill")
+                        Label(L10n.Tab.gallery, systemImage: "photo.on.rectangle.angled")
                     }
                     .tag(2)
             }

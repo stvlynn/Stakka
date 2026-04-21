@@ -27,7 +27,61 @@ enum L10n {
     enum Tab {
         static var map: String { L10n.text("tab.map", default: "Map") }
         static var capture: String { L10n.text("tab.capture", default: "Capture") }
-        static var stacking: String { L10n.text("tab.stacking", default: "Stacking") }
+        static var gallery: String { L10n.text("tab.gallery", default: "Gallery") }
+    }
+
+    enum Gallery {
+        static var title: String { L10n.text("gallery.title", default: "Gallery") }
+        static var empty: String { L10n.text("gallery.empty", default: "Your finished photos will appear here") }
+        static var emptyHint: String {
+            L10n.text("gallery.empty.hint", default: "Tap + below to create your first stacking project")
+        }
+        static var createProject: String { L10n.text("gallery.create", default: "New Project") }
+    }
+
+    enum Wizard {
+        static var stepMode: String { L10n.text("wizard.step.mode", default: "Stacking Mode") }
+        static var stepModeExplanation: String {
+            L10n.text(
+                "wizard.step.mode.explanation",
+                default: "Choose how your photos will be combined. If you're unsure, \"Average\" is a great starting point — it reduces noise and brings out faint detail."
+            )
+        }
+        static var stepFrames: String { L10n.text("wizard.step.frames", default: "Import Photos") }
+        static var stepFramesExplanation: String {
+            L10n.text(
+                "wizard.step.frames.explanation",
+                default: "Add at least 2 Light frames — these are your main photos of the night sky. Optionally add Dark, Flat, and Bias calibration frames for cleaner results."
+            )
+        }
+        static var stepReview: String { L10n.text("wizard.step.review", default: "Review & Start") }
+        static var stepReviewExplanation: String {
+            L10n.text(
+                "wizard.step.review.explanation",
+                default: "Everything looks good! The app will align your photos and stack them together. This may take a moment depending on how many frames you have."
+            )
+        }
+        static var next: String { L10n.text("wizard.next", default: "Next") }
+        static var back: String { L10n.text("wizard.back", default: "Back") }
+        static var startStacking: String { L10n.text("wizard.start", default: "Start Stacking") }
+        static func stepIndicator(current: Int, total: Int) -> String {
+            L10n.format("wizard.step.indicator", default: "Step %@ of %@", String(current), String(total))
+        }
+        static var lightFramesRequired: String {
+            L10n.text("wizard.frames.required", default: "At least 2 Light frames are needed to stack")
+        }
+        static var modeAverageHint: String {
+            L10n.text("wizard.mode.average.hint", default: "Best for most situations. Reduces noise by averaging pixel values across all frames.")
+        }
+        static var modeMedianHint: String {
+            L10n.text("wizard.mode.median.hint", default: "Great for removing satellites and planes. Uses the middle value so outliers disappear.")
+        }
+        static var modeKappaHint: String {
+            L10n.text("wizard.mode.kappa.hint", default: "Advanced. Rejects pixels that deviate too far from the mean, then averages the rest.")
+        }
+        static var modeMedianKappaHint: String {
+            L10n.text("wizard.mode.medianKappa.hint", default: "Combines median rejection with kappa-sigma clipping for the cleanest result.")
+        }
     }
 
     enum DarkSky {

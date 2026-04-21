@@ -10,7 +10,29 @@
 
 "tab.map" = "Map";
 "tab.capture" = "Capture";
+"tab.gallery" = "Gallery";
 "tab.stacking" = "Stacking";
+
+"gallery.title" = "Gallery";
+"gallery.empty" = "Your finished photos will appear here";
+"gallery.empty.hint" = "Tap + below to create your first stacking project";
+"gallery.create" = "New Project";
+
+"wizard.step.mode" = "Stacking Mode";
+"wizard.step.mode.explanation" = "Choose how your photos will be combined. If you're unsure, \"Average\" is a great starting point: it reduces noise and brings out faint detail.";
+"wizard.step.frames" = "Import Photos";
+"wizard.step.frames.explanation" = "Add at least 2 Light frames; these are your main photos of the night sky. Optionally add Dark, Flat, and Bias calibration frames for cleaner results.";
+"wizard.step.review" = "Review & Start";
+"wizard.step.review.explanation" = "Everything looks good! The app will align your photos and stack them together. This may take a moment depending on how many frames you have.";
+"wizard.next" = "Next";
+"wizard.back" = "Back";
+"wizard.start" = "Start Stacking";
+"wizard.step.indicator" = "Step %@ of %@";
+"wizard.frames.required" = "At least 2 Light frames are needed to stack";
+"wizard.mode.average.hint" = "Best for most situations. Reduces noise by averaging pixel values across all frames.";
+"wizard.mode.median.hint" = "Great for removing satellites and planes. Uses the middle value so outliers disappear.";
+"wizard.mode.kappa.hint" = "Advanced. Rejects pixels that deviate too far from the mean, then averages the rest.";
+"wizard.mode.medianKappa.hint" = "Combines median rejection with kappa-sigma clipping for the cleanest result.";
 
 "darksky.title" = "Light Pollution Map";
 "darksky.marker" = "Dark Sky Point";

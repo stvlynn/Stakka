@@ -10,7 +10,29 @@
 
 "tab.map" = "地图";
 "tab.capture" = "拍摄";
+"tab.gallery" = "图库";
 "tab.stacking" = "堆栈";
+
+"gallery.title" = "图库";
+"gallery.empty" = "完成的照片会显示在这里";
+"gallery.empty.hint" = "点击下方 + 创建第一个堆栈工程";
+"gallery.create" = "新建工程";
+
+"wizard.step.mode" = "堆栈模式";
+"wizard.step.mode.explanation" = "选择照片的合成方式。不确定时可先用“平均”，它能降低噪声并带出暗弱细节。";
+"wizard.step.frames" = "导入照片";
+"wizard.step.frames.explanation" = "至少添加 2 张亮场帧，它们是夜空主体照片；也可加入暗场、平场和偏置帧来获得更干净的结果。";
+"wizard.step.review" = "确认并开始";
+"wizard.step.review.explanation" = "设置已就绪。应用会先对齐照片，再进行堆栈；耗时取决于帧数量。";
+"wizard.next" = "下一步";
+"wizard.back" = "上一步";
+"wizard.start" = "开始堆栈";
+"wizard.step.indicator" = "第 %@ 步，共 %@ 步";
+"wizard.frames.required" = "至少需要 2 张亮场帧才能堆栈";
+"wizard.mode.average.hint" = "适合大多数情况，通过平均各帧像素值降低噪声。";
+"wizard.mode.median.hint" = "适合去除卫星和飞机轨迹，使用中位值让离群像素消失。";
+"wizard.mode.kappa.hint" = "高级模式，剔除偏离均值过远的像素后再平均。";
+"wizard.mode.medianKappa.hint" = "结合中值剔除与 Kappa-Sigma 裁剪，获得更干净的结果。";
 
 "darksky.title" = "光污染地图";
 "darksky.marker" = "暗空点";

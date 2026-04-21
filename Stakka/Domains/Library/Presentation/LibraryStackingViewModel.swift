@@ -49,6 +49,7 @@ final class LibraryStackingViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var pendingTIFFExport: StackedTIFFExport?
     @Published var isPresentingTIFFExporter = false
+    @Published private(set) var thumbnailCache: [UUID: UIImage] = [:]
 
     private let importPhotos: ImportPhotosUseCase
     private let loadRecentProject: LoadRecentStackProjectUseCase
@@ -103,6 +104,40 @@ final class LibraryStackingViewModel: ObservableObject {
 
     var isWorking: Bool {
         phase != .idle
+    }
+
+    var hasProjects: Bool {
+        !projectSummaries.isEmpty
+    }
+
+    func loadThumbnail(for projectID: UUID) {
+        guard thumbnailCache[projectID] == nil else { return }
+
+        Task {
+            if let loadedProject = try? await loadProject.execute(id: projectID),
+               let firstLight = loadedProject.enabledLightFrames.first {
+                thumbnailCache[projectID] = firstLight.image
+            }
+        }
+    }
+
+    func createProjectFromWizard(mode: StackingMode, frames: [WizardFrameGroup]) async -> UUID {
+        let newProject = StackingProject(
+            title: L10n.Project.newTitle(at: Date()),
+            mode: mode
+        )
+        project = newProject
+        result = nil
+        errorMessage = nil
+        pendingTIFFExport = nil
+
+        for group in frames {
+            let imported = await importPhotos.execute(from: group.items, kind: group.kind)
+            project.frames.append(contentsOf: imported)
+        }
+        invalidateComputedState()
+
+        return newProject.id
     }
 
     var hasCometModeEnabled: Bool {
