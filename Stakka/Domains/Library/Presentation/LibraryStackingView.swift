@@ -95,11 +95,14 @@ struct LibraryStackingView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .task {
             if let openProjectID {
-                viewModel.openProject(id: openProjectID)
-                // If the project already has a persisted result, surface it
-                // immediately so the hero section shows the stacked image
-                // even before any action.
-                await viewModel.restoreResult(for: openProjectID)
+                if viewModel.project.id == openProjectID, !viewModel.project.frames.isEmpty {
+                    // Newly-created projects are already loaded in the shared
+                    // view model; avoid reloading them while the auto pipeline
+                    // is starting from the gallery wizard.
+                    await viewModel.restoreResult(for: openProjectID)
+                } else {
+                    await viewModel.openProjectAndRestore(id: openProjectID)
+                }
             } else {
                 await viewModel.loadRecentProjectIfNeeded()
             }

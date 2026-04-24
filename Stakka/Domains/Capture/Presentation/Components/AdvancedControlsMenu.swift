@@ -101,7 +101,7 @@ struct AdvancedControlsMenu: View {
         HStack(spacing: Spacing.xl) {
             controlButton(
                 icon: "timer",
-                value: L10nFormat.decimal(viewModel.exposureTime, digits: 1),
+                value: L10nFormat.exposure(viewModel.exposureTime),
                 isActive: viewModel.showExposurePicker
             ) {
                 withAnimation(AnimationPreset.springBouncy) {
@@ -188,16 +188,16 @@ struct AdvancedControlsMenu: View {
         } label: {
             ZStack {
                 Circle()
-                    .stroke(viewModel.isCapturing ? Color.galaxyPink : Color.cosmicBlue, lineWidth: 3.5)
+                    .stroke(viewModel.isCapturing ? Color.galaxyPink : Color.ctaAccent, lineWidth: 3.5)
                     .frame(width: 76, height: 76)
-                    .glow(color: viewModel.isCapturing ? .galaxyPink : .cosmicBlue, radius: 10)
+                    .glow(color: viewModel.isCapturing ? .galaxyPink : .ctaAccent, radius: 10)
 
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: viewModel.isCapturing
                                 ? [Color.galaxyPink, Color.galaxyPink.opacity(0.8)]
-                                : [Color.cosmicBlue, Color.cosmicBlue.opacity(0.8)],
+                                : [Color.auroraGreen, Color.ctaAccent],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -211,7 +211,7 @@ struct AdvancedControlsMenu: View {
                 } else {
                     Image(systemName: "sparkles")
                         .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(Color.starWhite)
+                        .foregroundStyle(Color.spaceBackground)
                 }
             }
         }

@@ -2,6 +2,7 @@
 "common.confirm" = "确认";
 "common.new" = "新建";
 "common.open" = "打开";
+"common.close" = "关闭";
 "common.duplicate" = "复制";
 "common.delete" = "删除";
 "common.save" = "保存";
@@ -33,6 +34,7 @@
 "wizard.mode.median.hint" = "适合去除卫星和飞机轨迹，使用中位值让离群像素消失。";
 "wizard.mode.kappa.hint" = "高级模式，剔除偏离均值过远的像素后再平均。";
 "wizard.mode.medianKappa.hint" = "结合中值剔除与 Kappa-Sigma 裁剪，获得更干净的结果。";
+"wizard.mode.maximum.hint" = "保留每个像素的最亮值，适合星轨和流星。";
 
 "wizard.step.light" = "亮场帧";
 "wizard.step.light.explanation" = "这些是你拍摄的夜空照片，至少选 2 张；数量越多，最终画面越干净。";
@@ -94,11 +96,17 @@
 "camera.title" = "堆栈拍摄";
 "camera.recentProject.saved" = "已写入最近工程";
 "camera.settings.title" = "拍摄设置";
+"camera.pro" = "PRO";
+"camera.live" = "实时";
+"camera.mode.selector" = "星空";
+"camera.section.preset" = "预设";
 "camera.section.exposure" = "曝光";
 "camera.section.stacking" = "堆栈";
 "camera.field.shotCount" = "拍摄数量";
 "camera.field.interval" = "间隔";
 "camera.section.summary" = "总览";
+"camera.action.startCapture" = "开始";
+"camera.action.stopCapture" = "停止";
 "camera.picker.exposureTime" = "曝光时间";
 "camera.picker.shotCount" = "拍摄数量";
 "camera.control.aperture" = "光圈";
@@ -108,6 +116,14 @@
 "camera.control.shutter" = "快门";
 "camera.control.zoom" = "倍数";
 "camera.control.mode" = "档位";
+"camera.mode.milkyWay" = "银河";
+"camera.mode.starTrails" = "星轨";
+"camera.mode.moon" = "月亮";
+"camera.mode.meteor" = "流星";
+"camera.mode.milkyWay.hint" = "广角堆栈";
+"camera.mode.starTrails.hint" = "长序列";
+"camera.mode.moon.hint" = "短曝光";
+"camera.mode.meteor.hint" = "快节奏";
 
 "library.title" = "图库工程";
 "library.intro.title" = "DSS 风格工程流";
@@ -158,6 +174,7 @@
 "stack.mode.median" = "中值";
 "stack.mode.kappa" = "Kappa";
 "stack.mode.medianKappa" = "M-Kappa";
+"stack.mode.maximum" = "最大值";
 "stack.comet.standard" = "标准";
 "stack.comet.cometOnly" = "仅彗星";
 "stack.comet.cometAndStars" = "双冻结";
@@ -200,6 +217,7 @@
 "a11y.common.dismissPicker" = "关闭选择器";
 "a11y.camera.startCapture" = "开始拍摄";
 "a11y.camera.stopCapture" = "停止拍摄";
+"a11y.camera.selectAstroMode" = "选择%@模式";
 "a11y.library.importPhotos" = "导入%@照片";
 "a11y.library.importFiles" = "导入%@文件";
 "a11y.library.clearFrames" = "清空%@帧";

@@ -4,10 +4,18 @@ struct StackingModePickerView: View {
     let selectedMode: StackingMode
     let onSelect: (StackingMode) -> Void
 
+    private var visibleModes: [StackingMode] {
+        if StackingMode.manualSelectionCases.contains(selectedMode) {
+            return StackingMode.manualSelectionCases
+        }
+
+        return [selectedMode] + StackingMode.manualSelectionCases
+    }
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
-                ForEach(StackingMode.allCases) { mode in
+                ForEach(visibleModes) { mode in
                     Button {
                         onSelect(mode)
                     } label: {

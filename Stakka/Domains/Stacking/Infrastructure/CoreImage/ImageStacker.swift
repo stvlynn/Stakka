@@ -166,6 +166,32 @@ actor ImageStacker: StackingProcessor {
             recap: recap
         )
     }
+
+    func renderLiveStackPreview(_ project: StackingProject, strategy: LiveStackingStrategy) async throws -> UIImage {
+        let referenceFrame = try resolveReferenceFrame(in: project)
+        let lightFrames = project.enabledLightFrames
+
+        guard lightFrames.count >= strategy.minimumFrameCount else {
+            throw StackingError.notEnoughLightFrames
+        }
+
+        let referenceBuffer = try LinearRGBAImage(image: referenceFrame.image)
+        let calibration = try CalibrationContext(project: project, referenceSize: referenceBuffer.size)
+        let buffers = try lightFrames.map { frame in
+            var buffer = try LinearRGBAImage(image: frame.image, targetSize: referenceBuffer.size)
+            buffer = calibration.calibrate(lightBuffer: buffer)
+
+            if strategy.usesRegistration, let registration = frame.registration {
+                buffer = buffer.warped(using: registration.transform)
+            }
+
+            return buffer
+        }
+
+        let finalBuffer = try combine(buffers, mode: strategy.projectMode)
+
+        return try finalBuffer.makeUIImage()
+    }
 }
 
 private extension ImageStacker {
@@ -1506,77 +1532,6 @@ private extension ProjectiveTransform {
         )
     }
 
-    var simdMatrix: simd_double3x3 {
-        simd_double3x3(rows: [
-            SIMD3(m11, m12, m13),
-            SIMD3(m21, m22, m23),
-            SIMD3(m31, m32, m33)
-        ])
-    }
-
-    var inverseMatrix: ProjectiveTransform {
-        let matrix = simdMatrix
-        let determinant = simd_determinant(matrix)
-
-        guard determinant.isFinite, abs(determinant) > 0.000_001 else {
-            return .identity
-        }
-
-        let inverse = matrix.inverse
-        return ProjectiveTransform(
-            m11: inverse[0, 0],
-            m12: inverse[0, 1],
-            m13: inverse[0, 2],
-            m21: inverse[1, 0],
-            m22: inverse[1, 1],
-            m23: inverse[1, 2],
-            m31: inverse[2, 0],
-            m32: inverse[2, 1],
-            m33: inverse[2, 2]
-        )
-    }
-
-    func project(x: Double, y: Double) -> (x: Double, y: Double) {
-        let vector = simdMatrix * SIMD3(x, y, 1)
-        let w = vector.z == 0 ? 1 : vector.z
-        return (vector.x / w, vector.y / w)
-    }
-
-    func project(point: PixelPoint) -> PixelPoint {
-        let projected = project(x: point.x, y: point.y)
-        return PixelPoint(x: projected.x, y: projected.y)
-    }
-
-    func scaled(
-        sourceOriginalSize: PixelSize,
-        sourceWorkingSize: PixelSize,
-        destinationOriginalSize: PixelSize,
-        destinationWorkingSize: PixelSize
-    ) -> ProjectiveTransform {
-        let sourceScale = simd_double3x3(rows: [
-            SIMD3(sourceOriginalSize.width / sourceWorkingSize.width, 0, 0),
-            SIMD3(0, sourceOriginalSize.height / sourceWorkingSize.height, 0),
-            SIMD3(0, 0, 1)
-        ])
-        let destinationScale = simd_double3x3(rows: [
-            SIMD3(destinationWorkingSize.width / destinationOriginalSize.width, 0, 0),
-            SIMD3(0, destinationWorkingSize.height / destinationOriginalSize.height, 0),
-            SIMD3(0, 0, 1)
-        ])
-
-        let scaledMatrix = destinationScale * simdMatrix * sourceScale
-        return ProjectiveTransform(
-            m11: scaledMatrix[0, 0],
-            m12: scaledMatrix[0, 1],
-            m13: scaledMatrix[0, 2],
-            m21: scaledMatrix[1, 0],
-            m22: scaledMatrix[1, 1],
-            m23: scaledMatrix[1, 2],
-            m31: scaledMatrix[2, 0],
-            m32: scaledMatrix[2, 1],
-            m33: scaledMatrix[2, 2]
-        )
-    }
 }
 
 private extension UIImage {
@@ -1672,6 +1627,10 @@ private extension CGImage {
 // image-level `combine([LinearRGBAImage]...)` overload stays fileprivate
 // because it references the fileprivate `LinearRGBAImage` type.
 extension ImageStacker {
+    func registerFrame(floatingImage: CGImage, referenceImage: CGImage) -> FrameRegistration {
+        register(floatingImage: floatingImage, referenceImage: referenceImage)
+    }
+
     func analyzeFrame(_ image: UIImage) throws -> FrameAnalysis {
         let sample = try LuminanceSample(image: image, maxDimension: 256)
         let pixels = sample.pixels
@@ -1718,6 +1677,8 @@ extension ImageStacker {
             return kappaSigma(samples, replaceRejectedWithMedian: false)
         case .medianKappaSigma:
             return kappaSigma(samples, replaceRejectedWithMedian: true)
+        case .maximum:
+            return samples.max() ?? 0
         }
     }
 }

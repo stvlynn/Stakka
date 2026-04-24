@@ -120,16 +120,15 @@ final class AvxStackingParityTests: XCTestCase {
         XCTAssertEqual(ProjectiveTransform.identity.translationY, 0, accuracy: 1e-9)
     }
 
-    // MARK: - DSS: "AVX Accumulation MAXIMUM" — explicitly unsupported
+    // MARK: - DSS: "AVX Accumulation MAXIMUM"
 
-    func testMaximumStackingModeIsNotPartOfStakka() {
+    func testMaximumStackingModeIsPartOfStakka() {
         // DSS supports a MAXIMUM accumulator (per-pixel max across frames).
-        // Stakka deliberately exposes only average / median / kappaSigma /
-        // medianKappaSigma.  This documentation test guards against the
-        // accidental introduction of an unintended `.maximum` case.
-        let supported: Set<StackingMode> = [.average, .median, .kappaSigma, .medianKappaSigma]
-        XCTAssertEqual(Set(StackingMode.allCases), supported,
-                       "Stakka must keep its stacking modes restricted to the documented four.")
+        // Stakka exposes the same mode for live star-trail and meteor
+        // capture sessions, where the brightest trace from each frame must
+        // survive the stack.
+        let supported: Set<StackingMode> = [.average, .median, .kappaSigma, .medianKappaSigma, .maximum]
+        XCTAssertEqual(Set(StackingMode.allCases), supported)
     }
 
     // MARK: - DSS: "AVX Accumulation ENTROPY" — explicitly unsupported

@@ -2,6 +2,7 @@
 "common.confirm" = "Confirm";
 "common.new" = "New";
 "common.open" = "Open";
+"common.close" = "Close";
 "common.duplicate" = "Duplicate";
 "common.delete" = "Delete";
 "common.save" = "Save";
@@ -33,6 +34,7 @@
 "wizard.mode.median.hint" = "Great for removing satellites and planes. Uses the middle value so outliers disappear.";
 "wizard.mode.kappa.hint" = "Advanced. Rejects pixels that deviate too far from the mean, then averages the rest.";
 "wizard.mode.medianKappa.hint" = "Combines median rejection with kappa-sigma clipping for the cleanest result.";
+"wizard.mode.maximum.hint" = "Keeps the brightest value from each pixel. Useful for star trails and meteors.";
 
 "wizard.step.light" = "Light Frames";
 "wizard.step.light.explanation" = "These are your actual photos of the night sky. Pick at least 2 — the more you add, the cleaner the final image.";
@@ -94,11 +96,17 @@
 "camera.title" = "Stack Capture";
 "camera.recentProject.saved" = "Saved to recent project";
 "camera.settings.title" = "Capture Settings";
+"camera.pro" = "PRO";
+"camera.live" = "Live";
+"camera.mode.selector" = "Sky";
+"camera.section.preset" = "Preset";
 "camera.section.exposure" = "Exposure";
 "camera.section.stacking" = "Stacking";
 "camera.field.shotCount" = "Shots";
 "camera.field.interval" = "Interval";
 "camera.section.summary" = "Summary";
+"camera.action.startCapture" = "Start";
+"camera.action.stopCapture" = "Stop";
 "camera.picker.exposureTime" = "Exposure Time";
 "camera.picker.shotCount" = "Shot Count";
 "camera.control.aperture" = "Aperture";
@@ -108,6 +116,14 @@
 "camera.control.shutter" = "Shutter";
 "camera.control.zoom" = "Zoom";
 "camera.control.mode" = "Mode";
+"camera.mode.milkyWay" = "Milky Way";
+"camera.mode.starTrails" = "Star Trails";
+"camera.mode.moon" = "Moon";
+"camera.mode.meteor" = "Meteor";
+"camera.mode.milkyWay.hint" = "Wide stack";
+"camera.mode.starTrails.hint" = "Long sequence";
+"camera.mode.moon.hint" = "Short exposure";
+"camera.mode.meteor.hint" = "Fast cadence";
 
 "library.title" = "Library Project";
 "library.intro.title" = "DSS-Style Project Flow";
@@ -158,6 +174,7 @@
 "stack.mode.median" = "Median";
 "stack.mode.kappa" = "Kappa";
 "stack.mode.medianKappa" = "M-Kappa";
+"stack.mode.maximum" = "Maximum";
 "stack.comet.standard" = "Standard";
 "stack.comet.cometOnly" = "Comet Only";
 "stack.comet.cometAndStars" = "Dual Freeze";
@@ -200,6 +217,7 @@
 "a11y.common.dismissPicker" = "Dismiss picker";
 "a11y.camera.startCapture" = "Start capture";
 "a11y.camera.stopCapture" = "Stop capture";
+"a11y.camera.selectAstroMode" = "Select %@ mode";
 "a11y.library.importPhotos" = "Import %@ photos";
 "a11y.library.importFiles" = "Import %@ files";
 "a11y.library.clearFrames" = "Clear %@ frames";

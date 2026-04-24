@@ -1,3 +1,4 @@
+import simd
 import UIKit
 
 enum StackFrameKind: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -66,8 +67,16 @@ enum StackingMode: String, CaseIterable, Codable, Identifiable, Sendable {
     case median
     case kappaSigma
     case medianKappaSigma
+    case maximum
 
     var id: String { rawValue }
+
+    static let manualSelectionCases: [StackingMode] = [
+        .average,
+        .median,
+        .kappaSigma,
+        .medianKappaSigma
+    ]
 
     var title: String {
         switch self {
@@ -79,6 +88,8 @@ enum StackingMode: String, CaseIterable, Codable, Identifiable, Sendable {
             return L10n.Stacking.Mode.kappa
         case .medianKappaSigma:
             return L10n.Stacking.Mode.medianKappa
+        case .maximum:
+            return L10n.Stacking.Mode.maximum
         }
     }
 
@@ -92,6 +103,8 @@ enum StackingMode: String, CaseIterable, Codable, Identifiable, Sendable {
             return "waveform.path"
         case .medianKappaSigma:
             return "dial.medium"
+        case .maximum:
+            return "arrow.up.to.line.compact"
         }
     }
 }
@@ -173,6 +186,78 @@ struct ProjectiveTransform: Codable, Equatable, Sendable {
 
     var translationX: Double { m13 }
     var translationY: Double { m23 }
+
+    var simdMatrix: simd_double3x3 {
+        simd_double3x3(rows: [
+            SIMD3(m11, m12, m13),
+            SIMD3(m21, m22, m23),
+            SIMD3(m31, m32, m33)
+        ])
+    }
+
+    var inverseMatrix: ProjectiveTransform {
+        let matrix = simdMatrix
+        let determinant = simd_determinant(matrix)
+
+        guard determinant.isFinite, abs(determinant) > 0.000_001 else {
+            return .identity
+        }
+
+        let inverse = matrix.inverse
+        return ProjectiveTransform(
+            m11: inverse[0, 0],
+            m12: inverse[0, 1],
+            m13: inverse[0, 2],
+            m21: inverse[1, 0],
+            m22: inverse[1, 1],
+            m23: inverse[1, 2],
+            m31: inverse[2, 0],
+            m32: inverse[2, 1],
+            m33: inverse[2, 2]
+        )
+    }
+
+    func project(x: Double, y: Double) -> (x: Double, y: Double) {
+        let vector = simdMatrix * SIMD3(x, y, 1)
+        let w = vector.z == 0 ? 1 : vector.z
+        return (vector.x / w, vector.y / w)
+    }
+
+    func project(point: PixelPoint) -> PixelPoint {
+        let projected = project(x: point.x, y: point.y)
+        return PixelPoint(x: projected.x, y: projected.y)
+    }
+
+    func scaled(
+        sourceOriginalSize: PixelSize,
+        sourceWorkingSize: PixelSize,
+        destinationOriginalSize: PixelSize,
+        destinationWorkingSize: PixelSize
+    ) -> ProjectiveTransform {
+        let sourceScale = simd_double3x3(rows: [
+            SIMD3(sourceOriginalSize.width / sourceWorkingSize.width, 0, 0),
+            SIMD3(0, sourceOriginalSize.height / sourceWorkingSize.height, 0),
+            SIMD3(0, 0, 1)
+        ])
+        let destinationScale = simd_double3x3(rows: [
+            SIMD3(destinationWorkingSize.width / destinationOriginalSize.width, 0, 0),
+            SIMD3(0, destinationWorkingSize.height / destinationOriginalSize.height, 0),
+            SIMD3(0, 0, 1)
+        ])
+
+        let scaledMatrix = destinationScale * simdMatrix * sourceScale
+        return ProjectiveTransform(
+            m11: scaledMatrix[0, 0],
+            m12: scaledMatrix[0, 1],
+            m13: scaledMatrix[0, 2],
+            m21: scaledMatrix[1, 0],
+            m22: scaledMatrix[1, 1],
+            m23: scaledMatrix[1, 2],
+            m31: scaledMatrix[2, 0],
+            m32: scaledMatrix[2, 1],
+            m33: scaledMatrix[2, 2]
+        )
+    }
 }
 
 struct FrameRegistration: Codable, Equatable, Sendable {
@@ -287,6 +372,100 @@ struct StackingResult {
     let frameCount: Int
     let mode: StackingMode
     let recap: StackingRecap
+}
+
+enum LiveStackingStrategy: String, Sendable {
+    case deepSky
+    case starTrails
+    case lunar
+    case meteor
+
+    var usesRegistration: Bool {
+        switch self {
+        case .deepSky, .lunar:
+            return true
+        case .starTrails, .meteor:
+            return false
+        }
+    }
+
+    var projectMode: StackingMode {
+        switch self {
+        case .deepSky:
+            return .kappaSigma
+        case .lunar:
+            return .medianKappaSigma
+        case .starTrails, .meteor:
+            return .maximum
+        }
+    }
+
+    var minimumFrameCount: Int { 2 }
+
+    var maximumOffsetRatio: Double {
+        switch self {
+        case .deepSky:
+            return 0.18
+        case .lunar:
+            return 0.28
+        case .starTrails, .meteor:
+            return .infinity
+        }
+    }
+
+    var maximumAngleDegrees: Double {
+        switch self {
+        case .deepSky:
+            return 5
+        case .lunar:
+            return 8
+        case .starTrails, .meteor:
+            return .infinity
+        }
+    }
+}
+
+struct LiveStackingConfiguration: Sendable {
+    let strategy: LiveStackingStrategy
+    let title: String
+    let exposureTime: Double
+}
+
+enum LiveStackingPhase: Equatable, Sendable {
+    case idle
+    case waitingForFrames
+    case stacking
+    case failed
+}
+
+enum LiveStackingFrameStatus: Equatable, Sendable {
+    case accepted
+    case waitingForReference
+    case rejected(String)
+    case failed(String)
+}
+
+struct LiveStackingSnapshot {
+    let previewImage: UIImage?
+    let acceptedFrameCount: Int
+    let rejectedFrameCount: Int
+    let totalFrameCount: Int
+    let totalExposure: Double
+    let phase: LiveStackingPhase
+    let lastFrameStatus: LiveStackingFrameStatus
+    let project: StackingProject?
+}
+
+protocol LiveStackingProcessor {
+    func reset(configuration: LiveStackingConfiguration) async
+    func addFrame(
+        image: UIImage,
+        name: String,
+        source: StackFrameSource,
+        capturedAt: Date,
+        exposureDuration: Double
+    ) async -> LiveStackingSnapshot
+    func currentProject() async -> StackingProject?
 }
 
 enum StackingError: Error, LocalizedError {

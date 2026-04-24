@@ -165,9 +165,11 @@ Stakka/
 1. User taps exposure/shots button → Wheel picker appears
 2. User drags menu up → Advanced controls expand (aperture, shutter, zoom, mode)
 3. User taps capture → Sequential capture begins
-4. Progress updates via `@Published captureProgress`
-5. Captured images stored in `capturedImages` array
-6. Auto-stack on completion (future feature)
+4. The active camera repository applies supported exposure and zoom settings before each still capture
+5. Each captured frame is queued to the live stacking session through an `AsyncStream`
+6. Progress updates via `@Published captureProgress`
+7. Live stack preview/count/exposure update through `@Published` snapshot state after the stack queue processes frames
+8. The live-built `StackingProject` is saved as the recent library project
 
 **Key Constraints:**
 - Camera permission required (AVCaptureDevice.requestAccess)
@@ -175,6 +177,8 @@ Stakka/
 - UI updates on main actor
 - Exposure time: 0.1-30s
 - Shot count: 2-100
+- Capture cadence is decoupled from live-stack processing
+- Aperture and shooting-mode controls are presets/readouts; custom exposure duration and zoom are applied where supported by AVFoundation
 
 ### 2. Image Stacking Algorithm
 
@@ -183,8 +187,10 @@ Stakka/
 - Project-based workflow: analyze → register → stack
 - Frame model includes `Light`, `Dark`, `Flat`, `Dark Flat`, `Bias`
 - Vision-based homographic registration with translational fallback for enabled light frames
-- Multiple light combine modes: average, median, kappa-sigma, median kappa-sigma
+- Multiple light combine modes: average, median, kappa-sigma, median kappa-sigma, maximum
 - Optional DSS-style comet workflow: standard, comet-only, comet+stars
+- Live stacking session for camera frames reusing the same analyzer, registration, and mode mapping
+- Downsampled incremental live preview accumulator for capture-time responsiveness; final project stacking still uses the full image pipeline
 - Async/await for non-blocking execution
 
 **Performance:**
@@ -273,9 +279,9 @@ At the current codebase state:
 
 - library projects are the main production workflow
 - comet modes are implemented for library projects
-- camera capture hands off into the recent project
+- camera capture live-stacks frames and hands the resulting project into the recent project
 - TIFF export exists for final outputs
-- RAW/FITS import, intermediate exports, and live stacking are still pending
+- RAW/FITS import and intermediate exports are still pending
 
 ## State Management
 

@@ -19,6 +19,10 @@ extension Color {
     // Accent Colors
     static let nebulaPurple = Color(hex: "#A78BFA")
     static let galaxyPink = Color(hex: "#F472B6")
+    static let auroraGreen = Color(hex: "#86EFAC")
+    static let moonGold = Color(hex: "#FACC15")
+    static let meteorTeal = Color(hex: "#2DD4BF")
+    static let trailAmber = Color(hex: "#F59E0B")
 
     // Text (WCAG AA compliant on dark backgrounds)
     static let textPrimary = Color(hex: "#F8FAFC")      // 15.5:1 contrast

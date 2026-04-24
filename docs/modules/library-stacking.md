@@ -42,6 +42,8 @@ The gallery creation wizard combines the first three steps for new projects. Its
 
 The current iOS implementation supports Photos imports and file-based image imports. Each imported frame is normalized and downscaled for on-device processing. Projects are stored in a local project catalog and one project is marked as the current recent project.
 
+Successful pipeline runs persist both the updated project state and `result.png` immediately, then refresh gallery summaries so the completed stack appears as a preview tile without waiting for the debounced autosave loop.
+
 ## View Model
 
 `LibraryStackingViewModel` owns a single `StackingProject` plus transient UI state:
@@ -72,7 +74,7 @@ Any frame mutation invalidates cached analysis, registration, and the previous s
 
 - `StackProjectBrowserView` — open, duplicate, delete, or create projects
 - `StackProjectSummaryCard` — project title, reference frame, enabled-frame counts
-- `StackingModePickerView` — `average / median / kappaSigma / medianKappaSigma`
+- `StackingModePickerView` — `average / median / kappaSigma / medianKappaSigma`, with `maximum` shown only when opening a project that already uses it
 - `CometModePickerView` — off, standard, comet-only, comet+stars
 - `CometReviewStatusCard` — comet review progress and review entry
 - `ProcessingStatusCard` — active phase
@@ -111,7 +113,8 @@ Stacking is blocked while any enabled `Light` frame still requires comet review.
 
 ## Current Constraints
 
-- Camera capture can overwrite the recent project with a new capture-origin light-frame project
+- Camera capture can overwrite the recent project with a live-stacked capture-origin light-frame project
+- Camera-origin star-trail and meteor projects may use `maximum` stacking so bright traces survive final combine
 - The file importer currently targets standard raster images and TIFF; RAW/FITS are not wired yet
 - TIFF export covers the final stacked image only
 - Intermediate calibrated/registered frame export is still missing

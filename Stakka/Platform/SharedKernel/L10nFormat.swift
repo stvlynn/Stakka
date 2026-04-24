@@ -28,6 +28,15 @@ enum L10nFormat {
         "\(decimal(value, digits: 1))s"
     }
 
+    static func exposure(_ seconds: Double) -> String {
+        guard seconds < 0.1, seconds > 0 else {
+            return self.seconds(seconds)
+        }
+
+        let denominator = max(1, Int((1 / seconds).rounded()))
+        return "1/\(denominator)"
+    }
+
     static func duration(_ seconds: Double) -> String {
         let formatter = DateComponentsFormatter()
         formatter.allowedUnits = [.minute, .second]

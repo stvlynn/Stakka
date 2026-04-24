@@ -125,6 +125,17 @@ final class StackingModeTests: XCTestCase {
         XCTAssertEqual(result, inlierMean, accuracy: 0.05)
     }
 
+    // MARK: - MAXIMUM (DSS: "AVX Accumulation MAXIMUM")
+
+    func testMaximumKeepsBrightestSample() async {
+        let stacker = ImageStacker()
+        let samples: [Float] = [0.12, 0.84, 0.31, 0.63]
+
+        let result = await stacker.combine(samples, mode: .maximum)
+
+        XCTAssertEqual(result, 0.84, accuracy: 1e-6)
+    }
+
     // MARK: - End-to-end stack: DSS "One/Two gray frames" parity
 
     func testEndToEndAverageOfTwoIdenticalFramesPreservesBrightness() async throws {

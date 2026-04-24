@@ -228,17 +228,29 @@ final class LibraryStackingViewModel: ObservableObject {
 
     func openProject(id: UUID) {
         Task {
-            do {
-                if let loadedProject = try await loadProject.execute(id: id) {
-                    project = loadedProject
-                    result = nil
-                    errorMessage = nil
-                    try await markRecentProjectUseCase.execute(id: id)
-                    projectSummaries = try await loadProjectSummaries.execute()
-                }
-            } catch {
-                errorMessage = error.localizedDescription
+            _ = await openProjectAndRestore(id: id)
+        }
+    }
+
+    @discardableResult
+    func openProjectAndRestore(id: UUID) async -> Bool {
+        do {
+            guard let loadedProject = try await loadProject.execute(id: id) else {
+                return false
             }
+
+            project = loadedProject
+            result = nil
+            errorMessage = nil
+            pendingTIFFExport = nil
+
+            try await markRecentProjectUseCase.execute(id: id)
+            projectSummaries = try await loadProjectSummaries.execute()
+            await restoreResult(for: id)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
         }
     }
 
@@ -376,12 +388,16 @@ final class LibraryStackingViewModel: ObservableObject {
                 let stacked = try await self.runStacking.execute(project: registered, progress: reporter)
                 self.result = stacked
 
-                // Persist both the project state (frame analysis /
-                // registrations) and the stacked image so the gallery tile
-                // can render the result on next launch.
-                try? await self.persistStackResult.execute(image: stacked.image, projectID: projectID)
+                // Persist the completed project and result immediately. The
+                // gallery filters on result-bearing summaries, so relying on
+                // the debounced autosave here leaves the completed preview
+                // invisible until a later refresh.
+                self.persistTask?.cancel()
+                self.persistTask = nil
+                try await self.persistProject.execute(project: registered)
+                try await self.persistStackResult.execute(image: stacked.image, projectID: projectID)
                 self.thumbnailCache[projectID] = stacked.image
-                self.schedulePersistence()
+                self.projectSummaries = try await self.loadProjectSummaries.execute()
             } catch {
                 self.errorMessage = error.localizedDescription
             }
@@ -618,4 +634,3 @@ struct PipelineProgress: Equatable {
         incomingStage == stage ? startedAt : Date()
     }
 }
-

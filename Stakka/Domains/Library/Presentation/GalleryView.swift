@@ -64,7 +64,6 @@ struct GalleryView: View {
                     image: viewModel.thumbnailCache[summary.id],
                     onOpenProject: {
                         previewSummary = nil
-                        viewModel.openProject(id: summary.id)
                         navigateToProjectID = summary.id
                     },
                     onDismiss: { previewSummary = nil }

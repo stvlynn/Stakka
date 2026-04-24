@@ -28,4 +28,9 @@ struct ReplaceRecentStackProjectWithCapturedFramesUseCase {
         try await repository.save(project)
         return project
     }
+
+    func execute(project: StackingProject) async throws -> StackingProject {
+        try await repository.save(project)
+        return project
+    }
 }

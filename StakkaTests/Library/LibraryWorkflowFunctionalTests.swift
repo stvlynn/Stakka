@@ -38,6 +38,45 @@ final class LibraryWorkflowFunctionalTests: XCTestCase {
         XCTAssertTrue(viewModel.isPresentingTIFFExporter)
     }
 
+    func testRunPipelinePersistsResultAndRefreshesGalleryPreviewSummary() async throws {
+        let lightA = StackFrame(
+            kind: .light,
+            name: "L-1",
+            source: .fileURL(URL(fileURLWithPath: "/tmp/l1.png")),
+            image: TestImageFactory.starField(stars: [CGPoint(x: 18, y: 22), CGPoint(x: 52, y: 49)])
+        )
+        let lightB = StackFrame(
+            kind: .light,
+            name: "L-2",
+            source: .fileURL(URL(fileURLWithPath: "/tmp/l2.png")),
+            image: TestImageFactory.starField(stars: [CGPoint(x: 20, y: 24), CGPoint(x: 54, y: 51)])
+        )
+        let repository = InMemoryStackProjectRepository()
+        let processor = FakeStackingProcessor()
+        let viewModel = makeViewModel(
+            photoRepository: FakePhotoLibraryRepository(fileFrames: [lightA, lightB]),
+            stackRepository: repository,
+            processor: processor
+        )
+
+        await viewModel.importFrames(from: [URL(fileURLWithPath: "/tmp/l1.png")], kind: .light)
+        let projectID = viewModel.project.id
+        viewModel.runPipeline()
+
+        await waitUntil {
+            viewModel.phase == .idle &&
+                viewModel.result != nil &&
+                viewModel.thumbnailCache[projectID] != nil &&
+                viewModel.projectSummaries.contains { summary in
+                    summary.id == projectID && summary.resultThumbnailURL != nil
+                }
+        }
+
+        XCTAssertEqual(processor.stackCallCount, 1)
+        let persistedResult = try await repository.loadResultImage(id: projectID)
+        XCTAssertNotNil(persistedResult)
+    }
+
     func testViewModelCometReviewEditingClearsAndRestoresReviewState() async throws {
         let frame = StackFrame(
             kind: .light,

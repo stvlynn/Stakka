@@ -35,7 +35,18 @@ final class AVCaptureSessionRepository: NSObject, CameraDeviceRepository {
         }
     }
 
-    func capturePhoto() async throws -> UIImage {
+    func capturePhoto(settings: CaptureSettings) async throws -> CaptureFrame {
+        let exposureDuration = try await apply(settings)
+        let image = try await captureUIImage()
+
+        return CaptureFrame(
+            image: image,
+            capturedAt: Date(),
+            exposureDuration: exposureDuration
+        )
+    }
+
+    private func captureUIImage() async throws -> UIImage {
         try await withCheckedThrowingContinuation { continuation in
             let delegate = PhotoCaptureDelegate { [weak self] result in
                 self?.activeDelegate = nil
@@ -45,6 +56,65 @@ final class AVCaptureSessionRepository: NSObject, CameraDeviceRepository {
             activeDelegate = delegate
             photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: delegate)
         }
+    }
+
+    private func apply(_ settings: CaptureSettings) async throws -> Double {
+        guard let device = activeVideoDevice else {
+            return settings.effectiveExposureDuration
+        }
+
+        let appliedDuration = clampedExposureDuration(
+            requestedSeconds: settings.effectiveExposureDuration,
+            for: device
+        )
+        let appliedISO = min(max(device.iso, device.activeFormat.minISO), device.activeFormat.maxISO)
+
+        try device.lockForConfiguration()
+        configureZoom(settings.effectiveZoomFactor, on: device)
+
+        guard device.isExposureModeSupported(.custom) else {
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            device.unlockForConfiguration()
+            return settings.effectiveExposureDuration
+        }
+
+        await withCheckedContinuation { continuation in
+            device.setExposureModeCustom(duration: appliedDuration, iso: appliedISO) { _ in
+                continuation.resume()
+            }
+        }
+        device.unlockForConfiguration()
+
+        return CMTimeGetSeconds(appliedDuration)
+    }
+
+    private var activeVideoDevice: AVCaptureDevice? {
+        captureSession.inputs
+            .compactMap { ($0 as? AVCaptureDeviceInput)?.device }
+            .first { $0.hasMediaType(.video) }
+    }
+
+    private func configureZoom(_ zoomFactor: CGFloat, on device: AVCaptureDevice) {
+        let maxZoomFactor = min(device.activeFormat.videoMaxZoomFactor, 10)
+        device.videoZoomFactor = min(max(zoomFactor, 1), maxZoomFactor)
+    }
+
+    private func clampedExposureDuration(
+        requestedSeconds: Double,
+        for device: AVCaptureDevice
+    ) -> CMTime {
+        let requested = CMTime(
+            seconds: max(requestedSeconds, 1.0 / 8_000.0),
+            preferredTimescale: 1_000_000_000
+        )
+        let minimum = device.activeFormat.minExposureDuration
+        let maximum = device.activeFormat.maxExposureDuration
+
+        if CMTimeCompare(requested, minimum) < 0 { return minimum }
+        if CMTimeCompare(requested, maximum) > 0 { return maximum }
+        return requested
     }
 
     private func configureSessionIfNeeded() async throws {

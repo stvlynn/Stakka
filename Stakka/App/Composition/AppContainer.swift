@@ -5,7 +5,9 @@ final class AppContainer {
     private let darkSkyRepository: DarkSkyRepository
     private let locationService: CoreLocationService
     private let cameraRepository: AVCaptureSessionRepository
+    private let imageStacker: ImageStacker
     private let stackingProcessor: any StackingProcessor
+    private let liveStackingProcessor: any LiveStackingProcessor
     private let stackProjectRepository: any StackProjectRepository
     private let photoLibraryRepository: PhotoLibraryRepository
     private let sessionRepository: SessionRepository
@@ -14,7 +16,9 @@ final class AppContainer {
         darkSkyRepository = VIIRSDarkSkyRepository()
         locationService = CoreLocationService()
         cameraRepository = AVCaptureSessionRepository(permissionService: CameraPermissionService())
-        stackingProcessor = ImageStacker()
+        imageStacker = ImageStacker()
+        stackingProcessor = imageStacker
+        liveStackingProcessor = ImageLiveStackingSession(stacker: imageStacker)
         stackProjectRepository = LocalStackProjectRepository()
         photoLibraryRepository = SystemPhotoLibraryRepository()
         sessionRepository = InMemorySessionStore()
@@ -33,7 +37,8 @@ final class AppContainer {
             startCaptureSequence: StartCaptureSequenceUseCase(repository: cameraRepository),
             stopCaptureSequence: StopCaptureSequenceUseCase(repository: cameraRepository),
             persistSession: PersistSessionUseCase(repository: sessionRepository),
-            replaceRecentProjectWithCapturedFrames: ReplaceRecentStackProjectWithCapturedFramesUseCase(repository: stackProjectRepository)
+            replaceRecentProjectWithCapturedFrames: ReplaceRecentStackProjectWithCapturedFramesUseCase(repository: stackProjectRepository),
+            liveStackingProcessor: liveStackingProcessor
         )
     }
 

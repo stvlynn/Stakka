@@ -106,7 +106,7 @@ struct ProjectCreationWizardView: View {
                 )
 
                 VStack(spacing: Spacing.sm) {
-                    ForEach(StackingMode.allCases) { mode in
+                    ForEach(StackingMode.manualSelectionCases) { mode in
                         modeCard(mode)
                     }
                 }
@@ -170,6 +170,8 @@ struct ProjectCreationWizardView: View {
             return L10n.Wizard.modeKappaHint
         case .medianKappaSigma:
             return L10n.Wizard.modeMedianKappaHint
+        case .maximum:
+            return L10n.Wizard.modeMaximumHint
         }
     }
 

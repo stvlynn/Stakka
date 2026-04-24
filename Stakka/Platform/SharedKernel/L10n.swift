@@ -156,6 +156,9 @@ enum L10n {
         static var modeMedianKappaHint: String {
             L10n.text("wizard.mode.medianKappa.hint", default: "Combines median rejection with kappa-sigma clipping for the cleanest result.")
         }
+        static var modeMaximumHint: String {
+            L10n.text("wizard.mode.maximum.hint", default: "Keeps the brightest value from each pixel. Useful for star trails and meteors.")
+        }
     }
 
     enum DarkSky {
@@ -220,11 +223,17 @@ enum L10n {
         static var title: String { L10n.text("camera.title", default: "Stack Capture") }
         static var recentProjectSaved: String { L10n.text("camera.recentProject.saved", default: "Saved to recent project") }
         static var settingsTitle: String { L10n.text("camera.settings.title", default: "Capture Settings") }
+        static var proBadge: String { L10n.text("camera.pro", default: "PRO") }
+        static var liveStatus: String { L10n.text("camera.live", default: "Live") }
+        static var modeSelector: String { L10n.text("camera.mode.selector", default: "Sky") }
+        static var presetSection: String { L10n.text("camera.section.preset", default: "Preset") }
         static var exposureSection: String { L10n.text("camera.section.exposure", default: "Exposure") }
         static var stackingSection: String { L10n.text("camera.section.stacking", default: "Stacking") }
         static var shotCount: String { L10n.text("camera.field.shotCount", default: "Shots") }
         static var interval: String { L10n.text("camera.field.interval", default: "Interval") }
         static var summarySection: String { L10n.text("camera.section.summary", default: "Summary") }
+        static var startCapture: String { L10n.text("camera.action.startCapture", default: "Start") }
+        static var stopCapture: String { L10n.text("camera.action.stopCapture", default: "Stop") }
         static var exposureTime: String { L10n.text("camera.picker.exposureTime", default: "Exposure Time") }
         static var aperture: String { L10n.text("camera.control.aperture", default: "Aperture") }
         static var shutter: String { L10n.text("camera.control.shutter", default: "Shutter") }
@@ -234,6 +243,14 @@ enum L10n {
         static var zoomFactor: String { L10n.text("camera.picker.zoomFactor", default: "Zoom Factor") }
         static var shotCountPicker: String { L10n.text("camera.picker.shotCount", default: "Shot Count") }
         static var shootingMode: String { L10n.text("camera.picker.shootingMode", default: "Shooting Mode") }
+        static var modeMilkyWay: String { L10n.text("camera.mode.milkyWay", default: "Milky Way") }
+        static var modeStarTrails: String { L10n.text("camera.mode.starTrails", default: "Star Trails") }
+        static var modeMoon: String { L10n.text("camera.mode.moon", default: "Moon") }
+        static var modeMeteor: String { L10n.text("camera.mode.meteor", default: "Meteor") }
+        static var modeMilkyWayHint: String { L10n.text("camera.mode.milkyWay.hint", default: "Wide-field stack") }
+        static var modeStarTrailsHint: String { L10n.text("camera.mode.starTrails.hint", default: "Long sequence") }
+        static var modeMoonHint: String { L10n.text("camera.mode.moon.hint", default: "Short exposure") }
+        static var modeMeteorHint: String { L10n.text("camera.mode.meteor.hint", default: "Fast cadence") }
     }
 
     enum Library {
@@ -340,6 +357,7 @@ enum L10n {
             static var median: String { L10n.text("stack.mode.median", default: "Median") }
             static var kappa: String { L10n.text("stack.mode.kappa", default: "Kappa") }
             static var medianKappa: String { L10n.text("stack.mode.medianKappa", default: "M-Kappa") }
+            static var maximum: String { L10n.text("stack.mode.maximum", default: "Maximum") }
         }
 
         enum Comet {
@@ -465,6 +483,9 @@ enum L10n {
         }
         static var stopCapture: String {
             L10n.text("a11y.camera.stopCapture", default: "Stop capture")
+        }
+        static func selectAstroMode(_ mode: String) -> String {
+            L10n.format("a11y.camera.selectAstroMode", default: "Select %@ mode", mode)
         }
         static func importPhotos(kind: String) -> String {
             L10n.format("a11y.library.importPhotos", default: "Import %@ photos", kind)

@@ -10,6 +10,7 @@ struct StartCaptureSequenceUseCase {
 
     func execute(
         settings: CaptureSettings,
+        onFrameCaptured: @escaping (CaptureFrame, Int) -> Void = { _, _ in },
         onProgress: @escaping (CaptureProgress) async -> Void
     ) async throws -> [CaptureFrame] {
         var frames: [CaptureFrame] = []
@@ -17,8 +18,10 @@ struct StartCaptureSequenceUseCase {
         for index in 0..<settings.numberOfShots {
             try Task.checkCancellation()
 
-            let image = try await repository.capturePhoto()
-            frames.append(CaptureFrame(image: image, capturedAt: Date()))
+            let frame = try await repository.capturePhoto(settings: settings)
+            frames.append(frame)
+
+            onFrameCaptured(frame, index + 1)
 
             await onProgress(CaptureProgress(completedShots: index + 1, totalShots: settings.numberOfShots))
 

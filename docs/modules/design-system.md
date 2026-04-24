@@ -26,6 +26,10 @@ Color.cosmicBlueDim         // #60A5FA — dimmed accent
 // Accents
 Color.nebulaPurple          // #A78BFA — secondary accent
 Color.galaxyPink            // #F472B6 — destructive / active
+Color.auroraGreen           // #86EFAC — camera CTA highlight
+Color.moonGold              // #FACC15 — lunar preset accent
+Color.meteorTeal            // #2DD4BF — meteor / timing accent
+Color.trailAmber            // #F59E0B — star-trail preset accent
 
 // Text
 Color.textPrimary           // #F8FAFC — same as starWhite
@@ -40,6 +44,7 @@ Color.textTertiary          // #64748B — de-emphasized
 - Use `galaxyPink` for stop/cancel/destructive actions
 - Use `cosmicBlue` for active state, progress, and primary CTAs
 - Use `nebulaPurple` for secondary highlights and gradients
+- Use `auroraGreen`, `moonGold`, `meteorTeal`, and `trailAmber` for camera mode accents only unless a new module explicitly adopts them
 
 ## Typography
 
