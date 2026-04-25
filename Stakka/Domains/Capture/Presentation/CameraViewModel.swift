@@ -14,12 +14,11 @@ final class CameraViewModel: ObservableObject {
     @Published var liveStackedExposure: Double = 0
     @Published var liveStackingPhase: LiveStackingPhase = .idle
 
-    @Published var showExposurePicker = false
-    @Published var showShotsPicker = false
-    @Published var showAperturePicker = false
-    @Published var showShutterPicker = false
-    @Published var showZoomPicker = false
-    @Published var showModePicker = false
+    /// Identifies which capture parameter is currently driven by the
+    /// inline horizontal wheel that lives above the controls drawer.
+    /// Only one parameter can be edited at a time; tapping the same
+    /// control toggles it off.
+    @Published var activeInlineControl: CameraInlineControl?
     @Published var recentProjectTitle: String?
 
     @Published var exposureTime: Double = 15
@@ -126,6 +125,17 @@ final class CameraViewModel: ObservableObject {
         captureTask = nil
         stopCaptureSequence.execute()
         isCapturing = false
+    }
+
+    /// Toggles the inline wheel for the given control. Tapping the same
+    /// control twice collapses the wheel; tapping a different control
+    /// switches focus without an extra dismiss step.
+    func toggleInlineControl(_ control: CameraInlineControl) {
+        activeInlineControl = (activeInlineControl == control) ? nil : control
+    }
+
+    func dismissInlineControl() {
+        activeInlineControl = nil
     }
 
     func updateExposure(by delta: Double) {
@@ -280,6 +290,20 @@ final class CameraViewModel: ObservableObject {
 private struct LiveFrameEvent {
     let frame: CaptureFrame
     let index: Int
+}
+
+/// A capture parameter that can be driven by the inline horizontal wheel
+/// that sits above the controls drawer. Exposure and shot count surface
+/// in the collapsed drawer; aperture/shutter/zoom/mode are wired to
+/// the same wheel from inside the expanded drawer for a consistent
+/// editing model.
+enum CameraInlineControl: Hashable {
+    case exposure
+    case shots
+    case aperture
+    case shutter
+    case zoom
+    case mode
 }
 
 private extension AstroCaptureMode {

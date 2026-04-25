@@ -4,6 +4,7 @@
 *.xcworkspace
 .derivedData/
 DerivedData/
+Makefile.local
 .swiftpm/
 *.swiftmodule
 *.swiftdoc

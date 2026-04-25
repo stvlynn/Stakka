@@ -40,16 +40,41 @@ struct CameraView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .toolbar(.hidden, for: .tabBar)
             .preferredColorScheme(.dark)
         }
     }
 
     private var authorizedContent: some View {
         ZStack {
-            Color.spaceBackground
-                .ignoresSafeArea()
+            fullScreenPreview
 
-            VStack(spacing: Spacing.md) {
+            cameraOverlayChrome
+
+            CameraControlsView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .task {
+            viewModel.setupCamera()
+        }
+    }
+
+    private var fullScreenPreview: some View {
+        CameraPreviewView(session: viewModel.captureSession)
+            .overlay(
+                LinearGradient(
+                    colors: [.black.opacity(0.56), .clear, .black.opacity(0.72)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .ignoresSafeArea()
+            .accessibilityHidden(true)
+    }
+
+    private var cameraOverlayChrome: some View {
+        VStack(spacing: Spacing.md) {
+            if !viewModel.isCapturing {
                 CameraTopBarView(
                     mode: viewModel.astroMode,
                     isCapturing: viewModel.isCapturing,
@@ -60,76 +85,54 @@ struct CameraView: View {
                     }
                 }
                 .padding(.top, Spacing.sm)
-
-                previewStage
-
-                Spacer(minLength: 318)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
-            .padding(.horizontal, Spacing.md)
 
-            CameraControlsView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            topPreviewOverlay
+
+            Spacer(minLength: 0)
+
+            bottomPreviewOverlay
         }
-        .task {
-            viewModel.setupCamera()
+        .padding(.horizontal, Spacing.md)
+        .padding(.bottom, viewModel.isCapturing ? 132 : 318)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(AnimationPreset.smooth, value: viewModel.isCapturing)
+    }
+
+    @ViewBuilder
+    private var topPreviewOverlay: some View {
+        if viewModel.showSettings && !viewModel.isCapturing {
+            CameraSettingsPanelView(viewModel: viewModel) {
+                withAnimation(AnimationPreset.springBouncy) {
+                    viewModel.showSettings = false
+                }
+            }
+            .transition(.move(edge: .top).combined(with: .opacity))
+        } else {
+            CameraHUDView(
+                aperture: viewModel.aperture,
+                shutterSpeed: viewModel.shutterSpeed,
+                iso: "ISO Auto",
+                zoom: viewModel.zoomLevel
+            )
+            .padding(.top, viewModel.isCapturing ? Spacing.sm : 0)
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
-    private var previewStage: some View {
-        ZStack(alignment: .top) {
-            CameraPreviewView(session: viewModel.captureSession)
-                .overlay(
-                    LinearGradient(
-                        colors: [.black.opacity(0.45), .clear, .black.opacity(0.56)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .continuousCorners(CornerRadius.xl)
-                .overlay(
-                    RoundedRectangle(cornerRadius: CornerRadius.xl, style: .continuous)
-                        .stroke(Color.starWhite.opacity(0.14), lineWidth: 1)
-                )
-
-            VStack(spacing: Spacing.sm) {
-                CameraHUDView(
-                    aperture: viewModel.aperture,
-                    shutterSpeed: viewModel.shutterSpeed,
-                    iso: "ISO Auto",
-                    zoom: viewModel.zoomLevel
-                )
-                .padding(.top, Spacing.md)
-                .padding(.horizontal, Spacing.md)
-
-                Spacer()
-
-                if let liveStackedImage = viewModel.liveStackedImage,
-                   viewModel.isCapturing || viewModel.liveStackedFrameCount > 1 {
-                    liveStackCard(image: liveStackedImage)
-                        .padding(.horizontal, Spacing.md)
-                        .padding(.bottom, Spacing.sm)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-
-                if let recentProjectTitle = viewModel.recentProjectTitle, !viewModel.isCapturing {
-                    captureProjectCard(title: recentProjectTitle)
-                        .padding(.bottom, Spacing.md)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
-
-            if viewModel.showSettings {
-                CameraSettingsPanelView(viewModel: viewModel) {
-                    withAnimation(AnimationPreset.springBouncy) {
-                        viewModel.showSettings = false
-                    }
-                }
-                .padding(Spacing.md)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
+    @ViewBuilder
+    private var bottomPreviewOverlay: some View {
+        if let liveStackedImage = viewModel.liveStackedImage,
+           viewModel.isCapturing || viewModel.liveStackedFrameCount > 1 {
+            liveStackCard(image: liveStackedImage)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .shadow(color: .black.opacity(0.45), radius: 18, y: 8)
+
+        if let recentProjectTitle = viewModel.recentProjectTitle, !viewModel.isCapturing {
+            captureProjectCard(title: recentProjectTitle)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
     }
 
     private func requestCameraAccess() {
@@ -163,7 +166,7 @@ struct CameraView: View {
             Spacer()
         }
         .padding(Spacing.md)
-        .glassCard()
+        .liquidGlassCard(cornerRadius: CornerRadius.lg, tint: Color.cosmicBlue)
     }
 
     private func liveStackCard(image: UIImage) -> some View {
@@ -191,12 +194,7 @@ struct CameraView: View {
             Spacer(minLength: 0)
         }
         .padding(Spacing.sm)
-        .background(Color.black.opacity(0.74))
-        .continuousCorners(CornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                .stroke(Color.starWhite.opacity(0.1), lineWidth: 1)
-        )
+        .liquidGlassCard(cornerRadius: CornerRadius.lg)
         .accessibilityElement(children: .combine)
     }
 
@@ -222,19 +220,25 @@ private struct CameraTopBarView: View {
     let onSettings: () -> Void
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            proPill
-                .frame(width: 96, alignment: .leading)
+        // Top bar's three pills (PRO / LIVE / settings) live in a single
+        // GlassEffectContainer so they share a sampling region — without
+        // the container each pill samples background independently and the
+        // rim highlights drift apart.
+        GlassEffectContainer(spacing: Spacing.md) {
+            HStack(spacing: Spacing.md) {
+                proPill
+                    .frame(width: 96, alignment: .leading)
 
-            Spacer(minLength: Spacing.sm)
+                Spacer(minLength: Spacing.sm)
 
-            livePill
-                .frame(maxWidth: 156)
+                livePill
+                    .frame(maxWidth: 156)
 
-            Spacer(minLength: Spacing.sm)
+                Spacer(minLength: Spacing.sm)
 
-            settingsButton
-                .frame(width: 96, alignment: .trailing)
+                settingsButton
+                    .frame(width: 96, alignment: .trailing)
+            }
         }
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
     }
@@ -247,17 +251,11 @@ private struct CameraTopBarView: View {
                 .foregroundStyle(Color.spaceBackground)
                 .padding(.horizontal, Spacing.md)
                 .frame(height: 36)
-                .background(Color.auroraGreen)
-                .continuousCorners(18)
+                .background(Color.auroraGreen, in: Capsule(style: .continuous))
         }
         .padding(4)
         .frame(height: 44)
-        .background(Color.black.opacity(0.82))
-        .continuousCorners(22)
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.starWhite.opacity(0.08), lineWidth: 1)
-        )
+        .liquidGlassPill(tint: Color.auroraGreen)
         .accessibilityLabel(L10n.Camera.proBadge)
     }
 
@@ -282,12 +280,7 @@ private struct CameraTopBarView: View {
         .padding(.horizontal, Spacing.md)
         .frame(height: 48)
         .frame(maxWidth: .infinity)
-        .background(Color.black.opacity(0.9))
-        .continuousCorners(24)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.starWhite.opacity(0.08), lineWidth: 1)
-        )
+        .liquidGlassPill(tint: isCapturing ? .galaxyPink : nil)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(L10n.Camera.liveStatus), \(mode.localizedTitle)")
     }
@@ -298,13 +291,10 @@ private struct CameraTopBarView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(isSettingsPresented ? Color.spaceBackground : Color.starWhite)
                 .frame(width: 72, height: 44)
-                .background(isSettingsPresented ? Color.auroraGreen : Color.spaceSurface.opacity(0.86))
-                .continuousCorners(22)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.starWhite.opacity(0.16), lineWidth: 1)
+                .liquidGlassPill(
+                    tint: isSettingsPresented ? Color.auroraGreen : nil,
+                    isInteractive: true
                 )
-                .shadow(color: .black.opacity(0.42), radius: 8, y: 3)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.Accessibility.openSettings)

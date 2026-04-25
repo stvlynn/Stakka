@@ -25,7 +25,7 @@ This documentation is written for maintainers working on the current codebase.
 
 ### Development
 
-- [development/WORKFLOW.md](./development/WORKFLOW.md) — setup, build, test, file-adding workflow
+- [development/WORKFLOW.md](./development/WORKFLOW.md) — setup, Makefile commands, simulator debugging, build/test workflow
 
 ### Planning
 

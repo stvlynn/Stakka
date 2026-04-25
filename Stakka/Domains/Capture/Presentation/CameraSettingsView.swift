@@ -10,29 +10,30 @@ struct CameraSettingsPanelView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        // The settings panel itself, its preset rows, readout cards, and
+        // the interval stepper are all separate Liquid Glass surfaces
+        // stacked over the camera preview — wrap them in a single
+        // GlassEffectContainer so they share sampling and the rim
+        // highlights of nested cards line up with the panel.
+        GlassEffectContainer(spacing: Spacing.sm) {
+            VStack(spacing: 0) {
+                header
 
-            Divider()
-                .overlay(Color.starWhite.opacity(0.08))
+                Divider()
+                    .overlay(Color.starWhite.opacity(0.08))
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
-                    presetSection
-                    readoutGrid
-                    intervalStepper
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: Spacing.lg) {
+                        presetSection
+                        readoutGrid
+                        intervalStepper
+                    }
+                    .padding(Spacing.lg)
                 }
-                .padding(Spacing.lg)
             }
+            .frame(maxWidth: .infinity, maxHeight: 430)
+            .liquidGlassCard(cornerRadius: CornerRadius.xl)
         }
-        .frame(maxWidth: .infinity, maxHeight: 430)
-        .background(Color.black.opacity(0.88))
-        .continuousCorners(CornerRadius.xl)
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.xl, style: .continuous)
-                .stroke(Color.starWhite.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.55), radius: 18, y: 8)
     }
 
     private var header: some View {
@@ -108,11 +109,10 @@ struct CameraSettingsPanelView: View {
         }
         .padding(.horizontal, Spacing.md)
         .frame(maxWidth: .infinity, minHeight: 54)
-        .background(isSelected ? mode.accent.opacity(0.16) : Color.spaceSurface.opacity(0.42))
-        .continuousCorners(CornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .stroke(isSelected ? mode.accent.opacity(0.7) : Color.clear, lineWidth: 1)
+        .liquidGlassCard(
+            cornerRadius: CornerRadius.md,
+            tint: isSelected ? mode.accent : nil,
+            isInteractive: true
         )
     }
 
@@ -189,8 +189,7 @@ struct CameraSettingsPanelView: View {
         .padding(.leading, Spacing.md)
         .padding(.trailing, Spacing.sm)
         .frame(maxWidth: .infinity, minHeight: 58)
-        .background(Color.spaceSurface.opacity(0.46))
-        .continuousCorners(CornerRadius.md)
+        .liquidGlassCard(cornerRadius: CornerRadius.md)
     }
 }
 
@@ -221,8 +220,7 @@ private struct CameraSettingsReadout: View {
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.spaceSurface.opacity(0.46))
-        .continuousCorners(CornerRadius.md)
+        .liquidGlassCard(cornerRadius: CornerRadius.md, tint: tint)
         .accessibilityElement(children: .combine)
     }
 }

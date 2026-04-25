@@ -14,7 +14,14 @@ CONFIGURATION ?= Debug
 DESTINATION ?= generic/platform=iOS Simulator
 DERIVED_DATA ?= $(ROOT)/.derivedData
 
-.PHONY: help check check-tools generate regenerate open build build-debug build-release clean project-clean derived-data-clean show-destinations show-settings
+# Simulator targets ───────────────────────────────────────────
+# Override on the command line, e.g. `make run SIMULATOR='iPhone 15 Pro'`.
+SIMULATOR ?= iPhone 16 Pro
+BUNDLE_ID ?= com.stakka.app
+SIM_DESTINATION = platform=iOS Simulator,name=$(SIMULATOR)
+APP_PATH = $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphonesimulator/$(SCHEME).app
+
+.PHONY: help check check-tools generate regenerate open build build-debug build-release clean project-clean derived-data-clean show-destinations show-settings sim-list sim-boot sim-open sim-shutdown sim-erase sim-build sim-install sim-launch sim-stop sim-logs run debug
 
 -include Makefile.local
 
@@ -78,6 +85,56 @@ show-settings: generate ## Print key effective build settings
 		-scheme "$(SCHEME)" \
 		-configuration "$(CONFIGURATION)" \
 		-showBuildSettings
+
+# ─────────────────────────────────────────────
+# Simulator (boot, install, run, logs)
+# ─────────────────────────────────────────────
+
+sim-list: ## List bootable iPhone / iPad simulators
+	@xcrun simctl list devices available | grep -E "iPhone|iPad" | sed 's/^[[:space:]]*//'
+
+sim-boot: ## Boot the configured simulator (no-op if already booted)
+	@xcrun simctl boot "$(SIMULATOR)" 2>/dev/null || true
+
+sim-open: sim-boot ## Boot + open Simulator.app so the screen is visible
+	$(OPEN) -a Simulator
+
+sim-shutdown: ## Shutdown the configured simulator
+	-xcrun simctl shutdown "$(SIMULATOR)" 2>/dev/null
+
+sim-erase: ## Erase content & settings on the configured simulator
+	-xcrun simctl shutdown "$(SIMULATOR)" 2>/dev/null
+	xcrun simctl erase "$(SIMULATOR)"
+
+sim-build: generate ## Build the app for the concrete simulator (required before install)
+	cd "$(ROOT)" && $(XCODEBUILD) \
+		-project "$(PROJECT)" \
+		-scheme "$(SCHEME)" \
+		-configuration "$(CONFIGURATION)" \
+		-destination "$(SIM_DESTINATION)" \
+		-derivedDataPath "$(DERIVED_DATA)" \
+		build
+
+sim-install: sim-build sim-boot ## Build + install the .app on the booted simulator
+	xcrun simctl install "$(SIMULATOR)" "$(APP_PATH)"
+
+sim-launch: ## Launch the installed app (returns immediately)
+	xcrun simctl launch "$(SIMULATOR)" "$(BUNDLE_ID)"
+
+sim-stop: ## Terminate the app if it is running on the simulator
+	-xcrun simctl terminate "$(SIMULATOR)" "$(BUNDLE_ID)" 2>/dev/null
+
+run: sim-open sim-install ## One-shot: boot + build + install + launch with stdout/stderr streamed
+	-xcrun simctl terminate "$(SIMULATOR)" "$(BUNDLE_ID)" 2>/dev/null
+	xcrun simctl launch --console-pty "$(SIMULATOR)" "$(BUNDLE_ID)"
+
+debug: sim-open sim-install ## Launch waiting for a debugger to attach (Xcode → Debug → Attach to Process)
+	-xcrun simctl terminate "$(SIMULATOR)" "$(BUNDLE_ID)" 2>/dev/null
+	xcrun simctl launch --wait-for-debugger "$(SIMULATOR)" "$(BUNDLE_ID)"
+
+sim-logs: ## Stream OS logs filtered to the Stakka process from the booted simulator
+	xcrun simctl spawn "$(SIMULATOR)" log stream --level debug \
+		--predicate 'processImagePath ENDSWITH "/$(SCHEME)"'
 
 # ─────────────────────────────────────────────
 # Cleanup

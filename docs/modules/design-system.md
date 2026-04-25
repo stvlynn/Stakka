@@ -168,7 +168,9 @@ Clips a view with continuous corner radii.
 
 ### `.glassCard()`
 
-Frosted glass card effect. Used for control panels and information cards.
+Frosted glass card effect. Used for control panels and information
+cards on non-camera surfaces (library, dark sky, permission primer,
+etc.).
 
 ```swift
 .glassCard()
@@ -179,6 +181,51 @@ Frosted glass card effect. Used for control panels and information cards.
 // 3. ultraThinMaterial background blur
 // All with continuous CornerRadius.lg
 ```
+
+### Liquid Glass — `.liquidGlass(...)` / `.liquidGlassCard(...)` / `.liquidGlassPill(...)`
+
+The Liquid Glass surface treatment is the iOS 26 visual language
+introduced at WWDC25 (session 323). The Stakka deployment target is
+iOS 26.0, so these helpers delegate directly to the native
+`glassEffect(_:in:)` API.
+
+```swift
+.liquidGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+.liquidGlassCard(cornerRadius: CornerRadius.xxl, tint: .cosmicBlue)
+.liquidGlassPill(tint: .auroraGreen, isInteractive: true)
+```
+
+Arguments:
+
+| Argument         | Meaning                                                                          |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `in shape:`      | Clip + sample shape — typically a `RoundedRectangle`, `Capsule`, or `Circle`.    |
+| `tint:`          | Optional accent color picked up by the rim + reflection (`Glass.tint(_:)`).      |
+| `isInteractive:` | Opts the surface into the system's dynamic light response (`Glass.interactive`). |
+
+Apple's `Glass` type only exposes `.regular`, `.clear`, and `.identity`
+variants — there is no system-provided "prominent" surface. Visual
+prominence is achieved through `tint:` (e.g. an active control button
+taking on `cosmicBlue`, a capturing pill turning `galaxyPink`) or, for
+buttons specifically, by switching to `.buttonStyle(.glassProminent)`.
+
+#### `GlassEffectContainer`
+
+Adjacent Liquid Glass surfaces should be wrapped in a single
+`GlassEffectContainer(spacing:)` so they share a sampling region —
+**glass cannot sample other glass.** Without the container, nested or
+neighboring glass surfaces produce inconsistent rim highlights.
+
+The camera page wraps three groups:
+
+1. The top bar's three pills (`PRO` / `LIVE` / settings).
+2. The bottom idle stack (mode selector card + drawer + inline wheel
+   picker, plus all the buttons within them).
+3. The settings panel + its preset rows, readout grid, and interval
+   stepper.
+
+The camera page is the canonical Liquid Glass adopter — every card,
+pill, button, and panel on it routes through these helpers.
 
 ### `.glow(color:radius:)`
 
@@ -241,6 +288,45 @@ The glass card effect uses two separate `.background()` modifiers for proper lay
 ```
 
 Order matters — the colored tint sits on top of the blur.
+
+## LiquidGlassModifier Detail
+
+`LiquidGlassModifier` is a thin pass-through to the iOS 26
+`glassEffect(_:in:)` API:
+
+```swift
+struct LiquidGlassModifier<S: Shape>: ViewModifier {
+    let shape: S
+    let tint: Color?
+    let isInteractive: Bool
+
+    func body(content: Content) -> some View {
+        content.glassEffect(resolvedGlass, in: shape)
+    }
+
+    private var resolvedGlass: Glass {
+        var glass: Glass = .regular
+        if let tint { glass = glass.tint(tint) }
+        if isInteractive { glass = glass.interactive() }
+        return glass
+    }
+}
+```
+
+All visual fidelity (depth, refraction, specular response, dynamic
+adaptation to underlying content, animated morphing during state
+transitions) is delegated to the system. The helpers exist mainly to:
+
+1. Centralize the call site so future API tweaks land in one place.
+2. Provide convenience wrappers for the most common shapes
+   (`RoundedRectangle` for cards, `Capsule` for pills).
+3. Document the camera page's intended Liquid Glass usage in a single
+   discoverable file.
+
+For morphing transitions between two glass surfaces, use
+`@Namespace` + `glassEffectID(_:in:)` directly on the views — the
+helpers don't currently wrap that, and morphing is rare on the
+camera surface.
 
 ## Adding to the Design System
 

@@ -161,6 +161,87 @@ extension View {
     }
 }
 
+// MARK: - Liquid Glass (iOS 26 visual language)
+//
+// Stakka's deployment target is iOS 26.0, so this modifier delegates
+// directly to the native `glassEffect(_:in:)` API introduced at WWDC25
+// (session 323). Optional `tint:` colors the rim with an accent, and
+// `isInteractive:` opts into the system's dynamic light response on
+// tappable surfaces.
+//
+// Apple's `Glass` type exposes `.regular`, `.clear`, and `.identity`
+// only — there is no native "prominent" surface variant. Visual
+// prominence is achieved through tinting and / or by switching the
+// outermost button style to `GlassProminentButtonStyle`.
+//
+// Adjacent glass surfaces should be wrapped in a `GlassEffectContainer`
+// so they share a sampling region — see `CameraView` and
+// `CameraControlsView` for canonical examples.
+
+struct LiquidGlassModifier<S: Shape>: ViewModifier {
+    let shape: S
+    let tint: Color?
+    let isInteractive: Bool
+
+    func body(content: Content) -> some View {
+        content.glassEffect(resolvedGlass, in: shape)
+    }
+
+    private var resolvedGlass: Glass {
+        var glass: Glass = .regular
+        if let tint {
+            glass = glass.tint(tint)
+        }
+        if isInteractive {
+            glass = glass.interactive()
+        }
+        return glass
+    }
+}
+
+extension View {
+    /// Apply the Liquid Glass surface treatment, clipped to an arbitrary
+    /// shape. Prefer the convenience helpers below for the common cases.
+    func liquidGlass<S: Shape>(
+        in shape: S,
+        tint: Color? = nil,
+        isInteractive: Bool = false
+    ) -> some View {
+        modifier(LiquidGlassModifier(
+            shape: shape,
+            tint: tint,
+            isInteractive: isInteractive
+        ))
+    }
+
+    /// Rounded-rectangle Liquid Glass card — used for floating panels,
+    /// readouts, and content surfaces.
+    func liquidGlassCard(
+        cornerRadius: CGFloat = CornerRadius.lg,
+        tint: Color? = nil,
+        isInteractive: Bool = false
+    ) -> some View {
+        liquidGlass(
+            in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+            tint: tint,
+            isInteractive: isInteractive
+        )
+    }
+
+    /// Capsule-shaped Liquid Glass — used for status pills, badges, and
+    /// pill-shaped buttons (PRO / LIVE / settings / etc.).
+    func liquidGlassPill(
+        tint: Color? = nil,
+        isInteractive: Bool = false
+    ) -> some View {
+        liquidGlass(
+            in: Capsule(style: .continuous),
+            tint: tint,
+            isInteractive: isInteractive
+        )
+    }
+}
+
 // MARK: - Animation Presets (Optimized for micro-interactions)
 enum AnimationPreset {
     static let spring = Animation.spring(response: 0.4, dampingFraction: 0.75, blendDuration: 0)

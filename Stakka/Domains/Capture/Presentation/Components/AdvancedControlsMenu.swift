@@ -1,11 +1,105 @@
 import SwiftUI
 
 // MARK: - Advanced Controls Menu
+
+/// Bottom-of-screen camera deck. Combines an inline horizontal wheel
+/// (for the active capture parameter), a draggable expand/collapse
+/// drawer, and the primary capture button with its progress ring.
 struct AdvancedControlsMenu: View {
     @ObservedObject var viewModel: CameraViewModel
     @Binding var isExpanded: Bool
 
     var body: some View {
+        VStack(spacing: Spacing.sm) {
+            inlineWheel
+
+            menuCard
+        }
+    }
+
+    // MARK: Inline wheel
+
+    /// The horizontal wheel sits directly above the drawer. It only
+    /// renders when the user has activated a control (avoiding extra
+    /// chrome when the user is just framing a shot).
+    @ViewBuilder
+    private var inlineWheel: some View {
+        if let active = viewModel.activeInlineControl {
+            wheel(for: active)
+                .padding(.horizontal, Spacing.xs)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder
+    private func wheel(for control: CameraInlineControl) -> some View {
+        switch control {
+        case .exposure:
+            HorizontalWheelPicker(
+                title: L10n.Camera.exposureTime,
+                items: Self.exposureOptions,
+                selection: viewModel.exposureTime,
+                displayText: { L10nFormat.seconds($0) },
+                valueText: { L10nFormat.exposure($0) },
+                onSelect: { viewModel.updateExposureTime($0) },
+                onDismiss: { viewModel.dismissInlineControl() }
+            )
+        case .shots:
+            HorizontalWheelPicker(
+                title: L10n.Camera.shotCountPicker,
+                items: Self.shotsOptions,
+                selection: viewModel.numberOfShots,
+                displayText: { "\($0)" },
+                valueText: { "\($0)" },
+                onSelect: { viewModel.numberOfShots = $0 },
+                onDismiss: { viewModel.dismissInlineControl() }
+            )
+        case .aperture:
+            HorizontalWheelPicker(
+                title: L10n.Camera.aperture,
+                items: Self.apertureOptions,
+                selection: viewModel.aperture,
+                displayText: { $0 },
+                valueText: { $0 },
+                onSelect: { viewModel.aperture = $0 },
+                onDismiss: { viewModel.dismissInlineControl() }
+            )
+        case .shutter:
+            HorizontalWheelPicker(
+                title: L10n.Camera.shutterSpeed,
+                items: Self.shutterOptions,
+                selection: viewModel.shutterSpeed,
+                displayText: { $0 },
+                valueText: { $0 },
+                onSelect: { viewModel.updateShutterSpeed($0) },
+                onDismiss: { viewModel.dismissInlineControl() }
+            )
+        case .zoom:
+            HorizontalWheelPicker(
+                title: L10n.Camera.zoomFactor,
+                items: Self.zoomOptions,
+                selection: viewModel.zoomLevel,
+                displayText: { $0 },
+                valueText: { $0 },
+                onSelect: { viewModel.zoomLevel = $0 },
+                onDismiss: { viewModel.dismissInlineControl() }
+            )
+        case .mode:
+            HorizontalWheelPicker(
+                title: L10n.Camera.shootingMode,
+                items: Self.modeOptions,
+                selection: viewModel.shootingMode,
+                displayText: { $0 },
+                valueText: { $0 },
+                onSelect: { viewModel.shootingMode = $0 },
+                onDismiss: { viewModel.dismissInlineControl() }
+            )
+        }
+    }
+
+    // MARK: Drawer card
+
+    private var menuCard: some View {
         VStack(spacing: Spacing.md) {
             dragIndicator
 
@@ -17,19 +111,7 @@ struct AdvancedControlsMenu: View {
             mainControls
         }
         .padding(Spacing.lg)
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.xxl, style: .continuous)
-                .fill(Color.spaceSurface.opacity(0.97))
-                .overlay(
-                    RoundedRectangle(cornerRadius: CornerRadius.xxl, style: .continuous)
-                        .stroke(Color.starWhite.opacity(0.12), lineWidth: 1)
-                )
-        )
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.xxl, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
-        .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: -4)
+        .liquidGlassCard(cornerRadius: CornerRadius.xxl)
         .gesture(
             DragGesture()
                 .onEnded { value in
@@ -59,17 +141,19 @@ struct AdvancedControlsMenu: View {
                 advancedControlButton(
                     icon: "camera.aperture",
                     label: L10n.Camera.aperture,
-                    value: viewModel.aperture
+                    value: viewModel.aperture,
+                    isActive: viewModel.activeInlineControl == .aperture
                 ) {
-                    viewModel.showAperturePicker = true
+                    toggle(.aperture)
                 }
 
                 advancedControlButton(
                     icon: "timer",
                     label: L10n.Camera.shutter,
-                    value: viewModel.shutterSpeed
+                    value: viewModel.shutterSpeed,
+                    isActive: viewModel.activeInlineControl == .shutter
                 ) {
-                    viewModel.showShutterPicker = true
+                    toggle(.shutter)
                 }
             }
 
@@ -77,17 +161,19 @@ struct AdvancedControlsMenu: View {
                 advancedControlButton(
                     icon: "camera.metering.multispot",
                     label: L10n.Camera.zoom,
-                    value: viewModel.zoomLevel
+                    value: viewModel.zoomLevel,
+                    isActive: viewModel.activeInlineControl == .zoom
                 ) {
-                    viewModel.showZoomPicker = true
+                    toggle(.zoom)
                 }
 
                 advancedControlButton(
                     icon: "dial.medium.fill",
                     label: L10n.Camera.mode,
-                    value: viewModel.shootingMode
+                    value: viewModel.shootingMode,
+                    isActive: viewModel.activeInlineControl == .mode
                 ) {
-                    viewModel.showModePicker = true
+                    toggle(.mode)
                 }
             }
 
@@ -102,26 +188,30 @@ struct AdvancedControlsMenu: View {
             controlButton(
                 icon: "timer",
                 value: L10nFormat.exposure(viewModel.exposureTime),
-                isActive: viewModel.showExposurePicker
+                isActive: viewModel.activeInlineControl == .exposure
             ) {
-                withAnimation(AnimationPreset.springBouncy) {
-                    viewModel.showExposurePicker.toggle()
-                }
+                toggle(.exposure)
             }
 
-            captureButton
+            CameraCaptureButton(viewModel: viewModel)
 
             controlButton(
                 icon: "photo.stack",
                 value: "\(viewModel.numberOfShots)",
-                isActive: viewModel.showShotsPicker
+                isActive: viewModel.activeInlineControl == .shots
             ) {
-                withAnimation(AnimationPreset.springBouncy) {
-                    viewModel.showShotsPicker.toggle()
-                }
+                toggle(.shots)
             }
         }
     }
+
+    private func toggle(_ control: CameraInlineControl) {
+        withAnimation(AnimationPreset.springBouncy) {
+            viewModel.toggleInlineControl(control)
+        }
+    }
+
+    // MARK: Buttons
 
     private func controlButton(icon: String, value: String, isActive: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -135,22 +225,30 @@ struct AdvancedControlsMenu: View {
                     .foregroundStyle(isActive ? Color.cosmicBlue : Color.textTertiary)
             }
             .frame(width: 70, height: Spacing.touchTarget)
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.sm, style: .continuous)
-                    .fill(isActive ? Color.cosmicBlue.opacity(0.15) : Color.clear)
+            .liquidGlassCard(
+                cornerRadius: CornerRadius.sm,
+                tint: isActive ? Color.cosmicBlue : nil,
+                isInteractive: true
             )
             .contentShape(Rectangle())
             .scaleEffect(isActive ? 1.05 : 1.0)
             .animation(AnimationPreset.spring, value: isActive)
         }
+        .buttonStyle(.plain)
     }
 
-    private func advancedControlButton(icon: String, label: String, value: String, action: @escaping () -> Void) -> some View {
+    private func advancedControlButton(
+        icon: String,
+        label: String,
+        value: String,
+        isActive: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundStyle(Color.cosmicBlue)
+                    .foregroundStyle(isActive ? Color.cosmicBlue : Color.cosmicBlueDim)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -164,60 +262,49 @@ struct AdvancedControlsMenu: View {
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
+                Image(systemName: isActive ? "chevron.down" : "chevron.right")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(isActive ? Color.cosmicBlue : Color.textMuted)
             }
             .padding(.horizontal, Spacing.md)
             .frame(maxWidth: .infinity, minHeight: Spacing.touchTarget)
-            .background(Color.spaceSurfaceElevated.opacity(0.5))
-            .continuousCorners(CornerRadius.md)
+            .liquidGlassCard(
+                cornerRadius: CornerRadius.md,
+                tint: isActive ? Color.cosmicBlue : nil,
+                isInteractive: true
+            )
+            .animation(AnimationPreset.spring, value: isActive)
         }
         .buttonStyle(.plain)
     }
 
-    private var captureButton: some View {
-        Button {
-            withAnimation(AnimationPreset.springBouncy) {
-                if viewModel.isCapturing {
-                    viewModel.stopStackingCapture()
-                } else {
-                    viewModel.startStackingCapture()
-                }
-            }
-        } label: {
-            ZStack {
-                Circle()
-                    .stroke(viewModel.isCapturing ? Color.galaxyPink : Color.ctaAccent, lineWidth: 3.5)
-                    .frame(width: 76, height: 76)
-                    .glow(color: viewModel.isCapturing ? .galaxyPink : .ctaAccent, radius: 10)
+}
 
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: viewModel.isCapturing
-                                ? [Color.galaxyPink, Color.galaxyPink.opacity(0.8)]
-                                : [Color.auroraGreen, Color.ctaAccent],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 64, height: 64)
+// MARK: - Option sets
 
-                if viewModel.isCapturing {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.starWhite)
-                        .frame(width: 22, height: 22)
-                } else {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(Color.spaceBackground)
-                }
-            }
-        }
-        .scaleEffect(viewModel.isCapturing ? 0.92 : 1.0)
-        .animation(AnimationPreset.springBouncy, value: viewModel.isCapturing)
-        .sensoryFeedback(.selection, trigger: viewModel.isCapturing)
-        .accessibilityLabel(viewModel.isCapturing ? L10n.Accessibility.stopCapture : L10n.Accessibility.startCapture)
-    }
+extension AdvancedControlsMenu {
+    static let exposureOptions: [Double] = {
+        var options: [Double] = []
+        for i in 1...10 { options.append(Double(i) * 0.1) }
+        for i in 1...30 { options.append(Double(i)) }
+        return options
+    }()
+
+    static let shotsOptions: [Int] = Array(2...100)
+
+    static let apertureOptions: [String] = [
+        "f/1.4", "f/1.8", "f/2.0", "f/2.8", "f/4.0",
+        "f/5.6", "f/8.0", "f/11", "f/16", "f/22"
+    ]
+
+    static let shutterOptions: [String] = [
+        "1/8000", "1/4000", "1/2000", "1/1000", "1/500",
+        "1/250", "1/125", "1/60", "1/30", "1/15",
+        "1/8", "1/4", "1/2", "1\"", "2\"", "4\"", "8\"",
+        "15\"", "20\"", "30\""
+    ]
+
+    static let zoomOptions: [String] = ["0.5×", "1×", "2×", "3×", "5×", "10×"]
+
+    static let modeOptions: [String] = ShootingMode.allCases.map(\.rawValue)
 }

@@ -22,11 +22,7 @@ struct CameraHUDView: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.xs)
-        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.starWhite.opacity(0.12), lineWidth: 1)
-        )
+        .liquidGlassPill()
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(

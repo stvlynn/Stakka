@@ -2,13 +2,26 @@
 
 ## Prerequisites
 
-- macOS 14+
-- Xcode 15+
-- Swift 5.9+
+- macOS 26+ (Tahoe)
+- Xcode 26+ — required because Stakka adopts iOS 26 Liquid Glass APIs
+  (`glassEffect(_:in:)`, `GlassEffectContainer`, `Glass`,
+  `.buttonStyle(.glass)`). Earlier Xcode releases (16.x / 17.x) do not
+  ship the iOS 26 SDK and the project will not compile against them.
+- Swift 6.0+
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 
 ```bash
 brew install xcodegen
+```
+
+If `xcodebuild -version` reports anything older than Xcode 26, install
+the latest Xcode from the Mac App Store or
+<https://developer.apple.com/download/applications/> and point the
+command-line tools at it:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app
+xcodebuild -version
 ```
 
 ## First-Time Setup
@@ -24,23 +37,92 @@ The `.xcodeproj` is generated. Regenerate it whenever `project.yml` or source la
 
 ## Daily Commands
 
+Most day-to-day commands are wrapped in `Makefile`. The Makefile keeps
+generated project files, simulator builds, installation, and launch
+behavior consistent across local machines.
+
 ### Regenerate Project
 
 ```bash
-xcodegen generate
+make generate
 ```
 
 ### Build
 
 ```bash
-xcodebuild \
-  -project Stakka.xcodeproj \
-  -scheme Stakka \
-  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
-  build
+make build-debug
 ```
 
-If that simulator is not installed, use any available iPhone simulator or a concrete simulator identifier.
+`build-debug` uses a generic simulator destination and is the fastest
+local compile check. Use `make sim-build` when you need an installable
+`.app` for a concrete simulator.
+
+### Run on Simulator
+
+```bash
+make run
+```
+
+`make run` performs the full simulator loop:
+
+1. Generate `Stakka.xcodeproj`
+2. Boot the configured simulator
+3. Open Simulator.app
+4. Build the Debug app for that simulator
+5. Install `Stakka.app`
+6. Terminate any existing Stakka process
+7. Launch with `simctl launch --console-pty` so stdout/stderr stream in
+   the terminal
+
+Default simulator:
+
+```bash
+SIMULATOR ?= iPhone 16 Pro
+```
+
+Override it per command:
+
+```bash
+make run SIMULATOR='iPhone 15 Pro'
+make run SIMULATOR='iPhone 16 Pro Max'
+```
+
+To see available devices:
+
+```bash
+make sim-list
+```
+
+For persistent local defaults, create `Makefile.local`:
+
+```makefile
+SIMULATOR := iPhone 16 Pro Max
+```
+
+`Makefile.local` is loaded automatically and should remain local to the
+developer machine.
+
+### Attach a Debugger
+
+```bash
+make debug
+```
+
+This builds and installs the app, then launches it with
+`--wait-for-debugger`. In Xcode, use **Debug → Attach to Process** and
+choose `Stakka`.
+
+### Simulator Utilities
+
+| Command | Use |
+|---|---|
+| `make sim-open` | Boot the configured simulator and open Simulator.app |
+| `make sim-install` | Build and install without launching |
+| `make sim-launch` | Launch the already-installed app |
+| `make sim-stop` | Terminate the app on the configured simulator |
+| `make sim-logs` | Stream simulator OS logs filtered to the Stakka process |
+| `make sim-shutdown` | Shut down the configured simulator |
+| `make sim-erase` | Erase content and settings for the configured simulator |
 
 ### Run Tests
 
@@ -55,7 +137,7 @@ xcodebuild \
 ### Open in Xcode
 
 ```bash
-open Stakka.xcodeproj
+make open
 ```
 
 ## Project Navigation
@@ -122,9 +204,22 @@ Before merging behavior changes:
 
 #### Camera
 
-- Camera session starts
-- Exposure and shot-count pickers open and close correctly
-- Capture sequence runs
+- Camera session starts and the preview is rendered edge-to-edge
+- Drawer in its collapsed state shows only the drag indicator and the
+  primary controls row (no mode selector visible)
+- Dragging the drawer up reveals both the astro mode selector and the
+  secondary advanced control buttons; dragging down hides them again
+- Exposure and shot-count inline horizontal wheels open, snap, update,
+  and close correctly
+- Expanded drawer controls switch the same inline wheel between
+  aperture, shutter, zoom, and shooting mode
+- Starting a capture sequence collapses the top bar, the mode
+  selector, and the controls drawer; only a floating capture/stop
+  button remains over the preview
+- The capture button shows the stop square and animated progress ring
+  with the `current/total` caption while capturing
+- Stopping (or completing) a capture restores the full chrome with a
+  smooth animated transition
 - Captured sequence overwrites the recent stacking project
 
 #### Light Pollution
@@ -149,7 +244,13 @@ xcodegen generate
 
 ### Simulator destination not found
 
-List available devices in Xcode or use a concrete simulator ID in `xcodebuild`.
+```bash
+make sim-list
+make run SIMULATOR='iPhone 15 Pro'
+```
+
+Use any installed simulator name from `sim-list`. If builds still fail,
+open Xcode once so it can finish simulator runtime setup.
 
 ### Camera behavior differs on simulator
 
