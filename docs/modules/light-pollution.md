@@ -7,7 +7,7 @@ The light pollution module helps users find dark sky observation sites. It combi
 ```
 Domains/DarkSky/
 ├── Presentation/
-│   ├── DarkSkyMapView.swift            # Root view + inline search bar + search results
+│   ├── DarkSkyMapView.swift            # Root view + native searchable map suggestions
 │   ├── DarkSkyViewModel.swift          # Map state, search completer, result resolution
 │   └── Components/
 │       ├── DarkSkyInfoCard.swift        # Bottom info card with 7 data fields
@@ -34,27 +34,29 @@ Domains/DarkSky/
 
 ### DarkSkyMapView
 
-Root view. Full-screen MKMapView with a bottom search bar and info card overlay.
+Root view. Full-screen MKMapView with native SwiftUI search suggestions
+and an info card overlay.
 
 **Layout:**
+
 ```
 NavigationStack
 └── ZStack
     ├── LightPollutionMapView (UIViewRepresentable)   ← full screen, ignores safe area
     │   ├── WMTSLightPollutionTileOverlay             ← darkmap.cn tiles, aboveRoads level
-    │   └── MKPointAnnotation (when selected)          ← blue sparkle pin
+    │   └── MKPointAnnotation (when selected)          ← app-accent sparkle pin
     └── VStack (bottom-aligned)
-        ├── Search results list                        ← shown when focused + has results
-        ├── Search bar                                 ← always visible, native material style
+        ├── Native searchable suggestions              ← shown when the system search UI is active
         └── DarkSkyInfoCard                            ← slides up on pin selection
 ```
 
 ### LightPollutionMapView (UIViewRepresentable)
 
 Wraps `MKMapView` directly instead of using SwiftUI Map. This enables:
+
 - WMTS tile overlay from darkmap.cn at `.aboveRoads` level
 - Tap gesture → coordinate → pin placement via `MKPointAnnotation`
-- Custom pin annotation: `MKMarkerAnnotationView` with blue tint + sparkle glyph
+- Custom pin annotation: `MKMarkerAnnotationView` with `appAccent` tint + sparkle glyph
 
 ### DarkSkyInfoCard
 
@@ -80,18 +82,18 @@ The four sections are: header, coordinates + Bortle description, metrics (SQM / 
 
 When search results are visible, the info card hides to avoid overcrowding the bottom area.
 
-### Search Bar
+### Search
 
-An always-visible native-style search bar above the info card. Implementation:
+Place lookup uses SwiftUI's native `.searchable` modifier. Implementation:
 
 - `MKLocalSearchCompleter` provides real-time autocomplete as user types
 - `SearchCompleterDelegate` (private NSObject in ViewModel) bridges delegate callbacks to `@Published searchResults`
 - `MKLocalSearch` resolves a selected completion to a coordinate
-- `@FocusState` in the view controls result list visibility
-- `.ultraThinMaterial` background in `RoundedRectangle` for native frosted glass look
+- SwiftUI owns search presentation and renders the search field/suggestions
 
 **Interaction flow:**
-1. User taps search bar → keyboard appears, results show as user types
+
+1. User enters text in the native search field → suggestions show as the system search UI is active
 2. User taps a result → keyboard dismisses, map navigates (0.05° span), pin placed, reading fetched
 3. User taps the map → keyboard dismisses, results hide, pin placed at tap location
 
@@ -114,23 +116,26 @@ A `LocalLightPollutionTileOverlay` exists as an offline fallback that renders he
 
 ### Bortle Scale (9 levels)
 
-| Level | EN                  | ZH       | Color        | SQM (mag/arcsec²) | Brightness (mcd/m²) | Dark Sky Grade |
-|-------|---------------------|----------|--------------|--------------------|-----------------------|----------------|
-| 1     | Excellent Dark Sky  | 优秀暗空 | Green        | 22.00              | 0.01                  | 1              |
-| 2     | Truly Dark Sky      | 极佳暗空 | Mint         | 21.93              | 0.04                  | 1              |
-| 3     | Rural Dark Sky      | 乡村暗空 | Yellow       | 21.79              | 0.11                  | 2              |
-| 4     | Rural Transition    | 城郊过渡 | Orange       | 21.09              | 0.33                  | 3              |
-| 5     | Suburban Sky        | 城郊天空 | Orange       | 20.00              | 1.00                  | 3              |
-| 6     | Bright Suburban     | 明亮城郊 | Red (0.8)    | 19.22              | 3.00                  | 4              |
-| 7     | Suburban Edge       | 近城区   | Red          | 18.66              | 10.0                  | 4              |
-| 8     | City Sky            | 城市天空 | Red (0.9)    | 18.19              | 30.0                  | 5              |
-| 9     | Inner City          | 市中心   | Pink         | 17.50              | 100.0                 | 5              |
+
+| Level | EN                 | ZH   | Color     | SQM (mag/arcsec²) | Brightness (mcd/m²) | Dark Sky Grade |
+| ----- | ------------------ | ---- | --------- | ----------------- | ------------------- | -------------- |
+| 1     | Excellent Dark Sky | 优秀暗空 | Green     | 22.00             | 0.01                | 1              |
+| 2     | Truly Dark Sky     | 极佳暗空 | Mint      | 21.93             | 0.04                | 1              |
+| 3     | Rural Dark Sky     | 乡村暗空 | Yellow    | 21.79             | 0.11                | 2              |
+| 4     | Rural Transition   | 城郊过渡 | Orange    | 21.09             | 0.33                | 3              |
+| 5     | Suburban Sky       | 城郊天空 | Orange    | 20.00             | 1.00                | 3              |
+| 6     | Bright Suburban    | 明亮城郊 | Red (0.8) | 19.22             | 3.00                | 4              |
+| 7     | Suburban Edge      | 近城区  | Red       | 18.66             | 10.0                | 4              |
+| 8     | City Sky           | 城市天空 | Red (0.9) | 18.19             | 30.0                | 5              |
+| 9     | Inner City         | 市中心  | Pink      | 17.50             | 100.0               | 5              |
+
 
 ### Visibility Descriptions
 
 Derived from Bortle level as computed properties on `BortleLevel`:
 
 **Milky Way (`milkyWayVisibility`):**
+
 - Bortle 1–2: 极其壮观，结构清晰
 - Bortle 3: 清晰可见
 - Bortle 4: 部分可见
@@ -138,12 +143,14 @@ Derived from Bortle level as computed properties on `BortleLevel`:
 - Bortle 7–9: 肉眼不可见
 
 **M31/M33 Galaxy (`galaxyVisibility`):**
+
 - Bortle 1: M31、M33 肉眼可见
 - Bortle 2–3: M31 肉眼可见
 - Bortle 4: 勉强可辨
 - Bortle 5–9: 肉眼不可见
 
 **Zodiacal Light (`zodiacalLightVisibility`):**
+
 - Bortle 1: 极其清晰
 - Bortle 2: 清晰可见
 - Bortle 3: 可见
@@ -153,13 +160,15 @@ Derived from Bortle level as computed properties on `BortleLevel`:
 
 5-level classification mapping from Bortle:
 
+
 | Grade | Bortle Levels |
-|-------|---------------|
-| 一级   | 1, 2          |
-| 二级   | 3             |
-| 三级   | 4, 5          |
-| 四级   | 6, 7          |
-| 五级   | 8, 9          |
+| ----- | ------------- |
+| 一级    | 1, 2          |
+| 二级    | 3             |
+| 三级    | 4, 5          |
+| 四级    | 6, 7          |
+| 五级    | 8, 9          |
+
 
 ## Localization Formatters
 
@@ -168,21 +177,20 @@ Two formatters in `L10nFormat` support the info card:
 - `L10nFormat.sqm(_:)` → "21.79 mag/arcsec²"
 - `L10nFormat.brightness(_:)` → "0.11 mcd/m²"
 
-All labels and visibility descriptions are localized through `L10n.DarkSky.*` keys with both zh-Hans and en translations.
+All labels and visibility descriptions are localized through `L10n.DarkSky.`* keys with both zh-Hans and en translations.
 
 ## Navigation
 
 - Title: "光污染地图" / "Light Pollution Map"
-- `.ultraThinMaterial` navigation bar with `.dark` color scheme
 - Location button (top trailing) → recenters on device location
-- Search bar (bottom, always visible) → MKLocalSearch place lookup
+- Native `.searchable` → MKLocalSearch place lookup
 
 ## Current State
 
 The module supports:
 
 1. Real WMTS light pollution tile overlay from darkmap.cn (World Atlas 2015 data)
-2. Tap-to-pin with blue sparkle marker
+2. Tap-to-pin with app-accent sparkle marker
 3. Bortle level estimation from distance to major cities
 4. Full info card with SQM, dark sky grade, ground brightness, and 3 visibility indicators
 5. Place search via MKLocalSearchCompleter with autocomplete
@@ -216,3 +224,4 @@ ViewModel.selectCoordinate()
 4. Favorite locations persistence
 5. Weather/cloud cover overlay
 6. Bortle scale legend on map
+

@@ -275,7 +275,7 @@ struct CometAnnotation: Codable, Equatable, Sendable {
     let sourceFrameSize: PixelSize
 }
 
-struct StackFrame: Identifiable {
+struct StackFrame: Identifiable, Sendable {
     let id: UUID
     let kind: StackFrameKind
     let name: String
@@ -306,7 +306,7 @@ struct StackFrame: Identifiable {
     }
 }
 
-struct StackingProject {
+struct StackingProject: Sendable {
     let id: UUID
     var title: String
     var mode: StackingMode
@@ -366,7 +366,7 @@ struct StackingRecap: Sendable {
     let manuallyAdjustedFrameCount: Int
 }
 
-struct StackingResult {
+struct StackingResult: Sendable {
     let image: UIImage
     let tiffData: Data
     let frameCount: Int
@@ -445,7 +445,7 @@ enum LiveStackingFrameStatus: Equatable, Sendable {
     case failed(String)
 }
 
-struct LiveStackingSnapshot {
+struct LiveStackingSnapshot: Sendable {
     let previewImage: UIImage?
     let acceptedFrameCount: Int
     let rejectedFrameCount: Int
@@ -456,7 +456,7 @@ struct LiveStackingSnapshot {
     let project: StackingProject?
 }
 
-protocol LiveStackingProcessor {
+protocol LiveStackingProcessor: Sendable {
     func reset(configuration: LiveStackingConfiguration) async
     func addFrame(
         image: UIImage,
@@ -494,7 +494,7 @@ enum StackingError: Error, LocalizedError {
     }
 }
 
-protocol StackingProcessor {
+protocol StackingProcessor: Sendable {
     func analyze(_ project: StackingProject) async throws -> StackingProject
     func analyze(_ project: StackingProject, progress: StackingProgressReporter?) async throws -> StackingProject
 

@@ -1,4 +1,4 @@
-struct RunStackingUseCase {
+struct RunStackingUseCase: Sendable {
     private let processor: any StackingProcessor
 
     init(processor: any StackingProcessor) {

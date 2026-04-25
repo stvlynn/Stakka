@@ -40,15 +40,15 @@ struct StackProjectSummaryCard: View {
 
                 Image(systemName: "sparkles.rectangle.stack.fill")
                     .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(Color.cosmicBlue)
-                    .glow(color: .cosmicBlue, radius: 6)
+                    .foregroundStyle(Color.appAccent)
+                    .glow(color: .appAccent, radius: 6)
             }
 
             HStack(spacing: Spacing.sm) {
                 ForEach(StackFrameKind.allCases) { kind in
                     VStack(spacing: 6) {
                         Image(systemName: kind.symbolName)
-                            .foregroundStyle(Color.cosmicBlue)
+                            .foregroundStyle(Color.appAccent)
                         Text("\(project.frames(of: kind).filter(\.isEnabled).count)")
                             .font(.stakkaCaption)
                             .fontWeight(.semibold)
@@ -60,8 +60,7 @@ struct StackProjectSummaryCard: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.sm)
-                    .background(Color.spaceSurface.opacity(0.55))
-                    .continuousCorners(CornerRadius.md)
+                    .liquidGlassCard(cornerRadius: CornerRadius.md)
                 }
             }
         }

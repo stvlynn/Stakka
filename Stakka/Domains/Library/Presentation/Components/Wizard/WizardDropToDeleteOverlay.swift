@@ -32,15 +32,8 @@ struct WizardDropToDeleteOverlay: View {
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: Spacing.touchTarget)
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .fill(Color.galaxyPink.opacity(isHovering ? 0.95 : 0.7))
-                .shadow(color: .galaxyPink.opacity(0.4), radius: 16, y: 6)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .stroke(Color.starWhite.opacity(isHovering ? 0.7 : 0.25), lineWidth: 1.5)
-        )
+        .liquidGlassCard(cornerRadius: CornerRadius.md, tint: .galaxyPink, isInteractive: true)
+        .shadow(color: .galaxyPink.opacity(isHovering ? 0.35 : 0.20), radius: isHovering ? 18 : 10, y: 6)
         .dropDestination(for: WizardFrameItemRef.self) { refs, _ in
             defer { onDragEnded() }
             guard let ref = refs.first else { return false }

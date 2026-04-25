@@ -1,6 +1,6 @@
 import CoreLocation
 
-struct CenterOnUserLocationUseCase {
+struct CenterOnUserLocationUseCase: Sendable {
     private let locationService: CoreLocationService
     private let fallbackCoordinate = CLLocationCoordinate2D(latitude: 35.6824, longitude: 139.7690)
 

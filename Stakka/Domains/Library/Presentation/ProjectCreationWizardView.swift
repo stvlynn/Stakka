@@ -64,6 +64,7 @@ struct ProjectCreationWizardView: View {
                         Image(systemName: "xmark")
                             .foregroundStyle(Color.starWhite)
                     }
+                    .buttonStyle(.glass)
                     .accessibilityLabel(L10n.Common.done)
                     .accessibilityIdentifier("wizard.cancel")
                 }
@@ -80,19 +81,15 @@ struct ProjectCreationWizardView: View {
 
     private var stepIndicator: some View {
         VStack(spacing: Spacing.sm) {
-            HStack(spacing: Spacing.sm) {
-                ForEach(0..<totalSteps, id: \.self) { step in
-                    Capsule()
-                        .fill(step <= currentStep ? Color.cosmicBlue : Color.spaceSurfaceElevated)
-                        .frame(height: 4)
-                }
-            }
-            .padding(.horizontal, Spacing.md)
+            ProgressView(value: Double(currentStep + 1), total: Double(totalSteps))
+                .progressViewStyle(.linear)
+                .tint(Color.appAccent)
 
             Text(L10n.Wizard.stepIndicator(current: currentStep + 1, total: totalSteps))
                 .font(.stakkaSmall)
                 .foregroundStyle(Color.textTertiary)
         }
+        .padding(.horizontal, Spacing.md)
     }
 
     // MARK: - Step 1: Mode Selection
@@ -105,27 +102,36 @@ struct ProjectCreationWizardView: View {
                     explanation: L10n.Wizard.stepModeExplanation
                 )
 
-                VStack(spacing: Spacing.sm) {
-                    ForEach(StackingMode.manualSelectionCases) { mode in
-                        modeCard(mode)
+                VStack(spacing: 0) {
+                    ForEach(Array(StackingMode.manualSelectionCases.enumerated()), id: \.element.id) { index, mode in
+                        modeRowButton(mode)
+
+                        if index < StackingMode.manualSelectionCases.count - 1 {
+                            Divider()
+                                .overlay(Color.starWhite.opacity(0.10))
+                                .padding(.leading, 58)
+                        }
                     }
                 }
+                .systemGlassCard(cornerRadius: CornerRadius.lg)
             }
             .padding(Spacing.md)
         }
     }
 
-    private func modeCard(_ mode: StackingMode) -> some View {
-        Button {
+    private func modeRowButton(_ mode: StackingMode) -> some View {
+        let isSelected = selectedMode == mode
+
+        return Button {
             selectedMode = mode
         } label: {
             HStack(spacing: Spacing.md) {
                 Image(systemName: mode.symbolName)
-                    .font(.system(size: 20))
-                    .foregroundStyle(selectedMode == mode ? Color.cosmicBlue : Color.textSecondary)
-                    .frame(width: 32)
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(isSelected ? Color.appAccent : Color.textSecondary)
+                    .frame(width: 30)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(mode.title)
                         .font(.stakkaCaption)
                         .fontWeight(.semibold)
@@ -139,25 +145,20 @@ struct ProjectCreationWizardView: View {
 
                 Spacer()
 
-                if selectedMode == mode {
+                if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.cosmicBlue)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.appAccent)
                 }
             }
             .padding(Spacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                    .fill(Color.spaceSurface.opacity(0.8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                            .stroke(
-                                selectedMode == mode ? Color.cosmicBlue.opacity(0.6) : Color.starWhite.opacity(0.08),
-                                lineWidth: selectedMode == mode ? 1.5 : 1
-                            )
-                    )
-            )
+            .frame(maxWidth: .infinity, minHeight: 78, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(mode.title)
+        .accessibilityValue(modeHint(for: mode))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func modeHint(for mode: StackingMode) -> String {
@@ -202,15 +203,14 @@ struct ProjectCreationWizardView: View {
     private var requiredHint: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "info.circle")
-                .foregroundStyle(Color.cosmicBlue)
+                .foregroundStyle(Color.appAccent)
             Text(L10n.Wizard.lightFramesRequired)
                 .font(.stakkaSmall)
                 .foregroundStyle(Color.textSecondary)
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.cosmicBlue.opacity(0.08))
-        .continuousCorners(CornerRadius.md)
+        .systemGlassCard(cornerRadius: CornerRadius.lg, tint: .appAccent)
     }
 
     // MARK: - Step 3: Dark Frames (optional)
@@ -275,7 +275,7 @@ struct ProjectCreationWizardView: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.xs) {
                 Image(systemName: kind.symbolName)
-                    .foregroundStyle(Color.cosmicBlue)
+                    .foregroundStyle(Color.appAccent)
                 Text(kind.title)
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
@@ -290,9 +290,7 @@ struct ProjectCreationWizardView: View {
                         .foregroundStyle(Color.textTertiary)
                         .padding(.horizontal, Spacing.xs)
                         .padding(.vertical, 2)
-                        .background(
-                            Capsule().fill(Color.spaceSurfaceElevated.opacity(0.6))
-                        )
+                        .systemGlassPill()
                 }
 
                 // "?" icon opens an explainer sheet. Keeps the page visually
@@ -303,9 +301,8 @@ struct ProjectCreationWizardView: View {
                     Image(systemName: "questionmark.circle")
                         .foregroundStyle(Color.textSecondary)
                         .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
                 .accessibilityLabel(L10n.Wizard.learnMore)
 
                 Spacer()
@@ -313,7 +310,7 @@ struct ProjectCreationWizardView: View {
                 if !items.wrappedValue.isEmpty {
                     Text("\(items.wrappedValue.count)")
                         .font(.stakkaSmall)
-                        .foregroundStyle(Color.cosmicBlue)
+                        .foregroundStyle(Color.appAccent)
                         .monospacedDigit()
                 }
             }
@@ -328,14 +325,12 @@ struct ProjectCreationWizardView: View {
                     Text(L10n.Library.addFrame(kind: kind.title))
                         .font(.stakkaSmall)
                 }
-                .foregroundStyle(Color.cosmicBlue)
+                .foregroundStyle(Color.appAccent)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: Spacing.touchTarget)
-                .background(
-                    RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                        .stroke(Color.cosmicBlue.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [6]))
-                )
             }
+            .buttonStyle(.glass)
+            .tint(Color.appAccent)
 
             // Once the user has imported photos, show a horizontally
             // scrollable strip of 64pt thumbnails. Each tile is draggable
@@ -347,7 +342,7 @@ struct ProjectCreationWizardView: View {
             )
         }
         .padding(Spacing.md)
-        .glassCard()
+        .systemGlassCard(cornerRadius: CornerRadius.lg)
     }
 
     // MARK: - Step 5: Review
@@ -377,7 +372,7 @@ struct ProjectCreationWizardView: View {
                     }
                 }
                 .padding(Spacing.md)
-                .glassCard()
+                .systemGlassCard(cornerRadius: CornerRadius.lg)
             }
             .padding(Spacing.md)
         }
@@ -386,7 +381,7 @@ struct ProjectCreationWizardView: View {
     private func reviewRow(symbol: String, label: String, value: String) -> some View {
         HStack {
             Image(systemName: symbol)
-                .foregroundStyle(Color.cosmicBlue)
+                .foregroundStyle(Color.appAccent)
                 .frame(width: 24)
             Text(label)
                 .font(.stakkaCaption)
@@ -438,12 +433,8 @@ struct ProjectCreationWizardView: View {
                     .foregroundStyle(Color.textSecondary)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Spacing.touchTarget)
-                    .background(
-                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .stroke(Color.starWhite.opacity(0.15), lineWidth: 1)
-                    )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
             }
 
             if currentStep < totalSteps - 1 {
@@ -461,11 +452,9 @@ struct ProjectCreationWizardView: View {
                     .foregroundStyle(Color.starWhite)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Spacing.touchTarget)
-                    .background(
-                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .fill(canAdvanceFromCurrentStep ? Color.cosmicBlue : Color.spaceSurfaceElevated)
-                    )
                 }
+                .buttonStyle(.glassProminent)
+                .tint(canAdvanceFromCurrentStep ? Color.appAccent : Color.textMuted)
                 .disabled(!canAdvanceFromCurrentStep)
             } else {
                 Button {
@@ -483,11 +472,9 @@ struct ProjectCreationWizardView: View {
                     .foregroundStyle(Color.starWhite)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Spacing.touchTarget)
-                    .background(
-                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .fill(canCreate ? Color.cosmicBlue : Color.spaceSurfaceElevated)
-                    )
                 }
+                .buttonStyle(.glassProminent)
+                .tint(canCreate ? Color.appAccent : Color.textMuted)
                 .disabled(!canCreate)
             }
         }
@@ -593,7 +580,7 @@ private struct FrameExplainerSheet: View {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: kind.symbolName)
                         .font(.title2)
-                        .foregroundStyle(Color.cosmicBlue)
+                        .foregroundStyle(Color.appAccent)
                     Text(kind.title)
                         .font(.stakkaHeadline)
                         .foregroundStyle(Color.starWhite)

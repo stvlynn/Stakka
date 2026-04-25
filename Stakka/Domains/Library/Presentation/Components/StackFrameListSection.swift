@@ -31,7 +31,7 @@ struct StackFrameListSection: View {
                 Text("\(project.frames.filter(\.isEnabled).count)")
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.cosmicBlue)
+                    .foregroundStyle(Color.appAccent)
                     .monospacedDigit()
             }
             .padding(.horizontal, Spacing.xs)
@@ -60,7 +60,7 @@ struct StackFrameListSection: View {
             } label: {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: kind.symbolName)
-                        .foregroundStyle(Color.cosmicBlue)
+                        .foregroundStyle(Color.appAccent)
                         .frame(width: 24)
                     Text(kind.title)
                         .font(.stakkaCaption)
@@ -70,11 +70,11 @@ struct StackFrameListSection: View {
                         Text("\(count)")
                             .font(.stakkaSmall)
                             .fontWeight(.semibold)
-                            .foregroundStyle(Color.cosmicBlue)
+                            .foregroundStyle(Color.appAccent)
                             .monospacedDigit()
                             .padding(.horizontal, Spacing.xs)
                             .padding(.vertical, 2)
-                            .background(Capsule().fill(Color.cosmicBlue.opacity(0.14)))
+                            .liquidGlassPill(tint: .appAccent)
                     }
                     Spacer()
                     Image(systemName: "chevron.down")
@@ -109,14 +109,7 @@ struct StackFrameListSection: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                .fill(Color.spaceSurface.opacity(0.6))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                .stroke(Color.starWhite.opacity(0.06), lineWidth: 1)
-        )
+        .liquidGlassCard(cornerRadius: CornerRadius.lg)
     }
 
     private func toggle(_ kind: StackFrameKind) {

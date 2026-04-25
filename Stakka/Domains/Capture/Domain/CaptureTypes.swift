@@ -28,7 +28,7 @@ struct CaptureSettings: Sendable {
     var shootingMode: ShootingMode = .aperturePriority
 }
 
-struct CaptureFrame: Identifiable {
+struct CaptureFrame: Identifiable, Sendable {
     let id: UUID
     let image: UIImage
     let capturedAt: Date

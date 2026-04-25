@@ -17,10 +17,12 @@ struct CometAnnotationReviewView: View {
                     .ignoresSafeArea()
 
                 if let currentFrame {
-                    VStack(spacing: Spacing.md) {
-                        header(for: currentFrame)
-                        annotationCanvas(for: currentFrame)
-                        navigationControls
+                    GlassEffectContainer(spacing: Spacing.md) {
+                        VStack(spacing: Spacing.md) {
+                            header(for: currentFrame)
+                            annotationCanvas(for: currentFrame)
+                            navigationControls
+                        }
                     }
                     .padding(Spacing.md)
                 }
@@ -61,7 +63,7 @@ struct CometAnnotationReviewView: View {
                     if let annotation {
                         Text(annotation.requiresReview ? L10n.Library.reviewNeedsCheck : L10n.Library.reviewConfirmed)
                             .font(.stakkaCaption)
-                            .foregroundStyle(annotation.requiresReview ? Color.galaxyPink : Color.cosmicBlue)
+                            .foregroundStyle(annotation.requiresReview ? Color.galaxyPink : Color.appAccent)
                     }
                 }
 
@@ -112,7 +114,7 @@ struct CometAnnotationReviewView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.md)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .tint(.starWhite)
             }
         }
@@ -125,6 +127,7 @@ struct CometAnnotationReviewView: View {
             } label: {
                 controlLabel(L10n.Library.previousFrame, symbol: "chevron.left")
             }
+            .buttonStyle(.glass)
             .disabled(currentIndex == 0)
 
             Button {
@@ -132,6 +135,7 @@ struct CometAnnotationReviewView: View {
             } label: {
                 controlLabel(L10n.Library.nextFrame, symbol: "chevron.right")
             }
+            .buttonStyle(.glass)
             .disabled(currentIndex == frames.count - 1)
         }
     }
@@ -145,8 +149,6 @@ struct CometAnnotationReviewView: View {
         .fontWeight(.semibold)
         .frame(maxWidth: .infinity)
         .padding(.vertical, Spacing.md)
-        .background(Color.spaceSurface.opacity(0.6))
-        .continuousCorners(CornerRadius.md)
     }
 
     private func metricChip(symbol: String, value: String) -> some View {
@@ -159,8 +161,7 @@ struct CometAnnotationReviewView: View {
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, Spacing.sm)
         .padding(.vertical, 6)
-        .background(Color.spaceSurface.opacity(0.55))
-        .continuousCorners(CornerRadius.md)
+        .liquidGlassPill()
     }
 }
 
@@ -194,7 +195,7 @@ private struct CometAnnotationCanvas: View {
                 }
 
                 if let resolvedPoint {
-                    marker(for: resolvedPoint, in: displayRect, color: .cosmicBlue, filled: true)
+                    marker(for: resolvedPoint, in: displayRect, color: .appAccent, filled: true)
                 }
             }
             .contentShape(Rectangle())

@@ -11,18 +11,15 @@ struct CameraHUDView: View {
     let zoom: String
 
     var body: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: 0) {
             hudSegment(icon: "camera.aperture", value: aperture)
-            divider
             hudSegment(icon: "timer", value: shutterSpeed)
-            divider
             hudSegment(icon: "dot.circle.and.cursorarrow", value: iso)
-            divider
             hudSegment(icon: "plus.magnifyingglass", value: zoom)
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.xs)
-        .liquidGlassPill()
+        .frame(height: 56)
+        .padding(.horizontal, Spacing.sm)
+        .systemGlassPill()
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
@@ -34,20 +31,19 @@ struct CameraHUDView: View {
     }
 
     private func hudSegment(icon: String, value: String) -> some View {
-        HStack(spacing: 4) {
+        VStack(spacing: 3) {
             Image(systemName: icon)
-                .font(.caption2)
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.textTertiary)
             Text(value)
-                .font(.stakkaNumericSmall)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.starWhite)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.64)
         }
-    }
-
-    private var divider: some View {
-        Circle()
-            .fill(Color.textTertiary.opacity(0.6))
-            .frame(width: 3, height: 3)
+        .frame(width: 54)
+        .accessibilityElement(children: .combine)
     }
 }
 

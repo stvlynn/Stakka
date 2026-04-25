@@ -7,28 +7,56 @@ extension Color {
     static let spaceSurface = Color(hex: "#1E293B")     // Elevated surface
     static let spaceSurfaceElevated = Color(hex: "#334155")  // Higher elevation
 
-    // Star White & Cosmic Blue (Improved accessibility)
+    // Star White & App Accent (Improved accessibility)
     static let starWhite = Color(hex: "#F8FAFC")
-    static let cosmicBlue = Color(hex: "#3B82F6")
-    static let cosmicBlueDim = Color(hex: "#60A5FA")
 
-    /// CTA accent green (#22C55E). Previously mis-named `cosmicBlueGlow`;
-    /// renamed to match its actual hue and semantic role.
-    static let ctaAccent = Color(hex: "#22C55E")
+    /// App-wide accent. Use for active state, progress, primary CTAs, selected
+    /// rows, map pins, and Liquid Glass tinting.
+    static let appAccent = Color(hex: "#22C55E")
+    static let appAccentSoft = Color(hex: "#86EFAC")
+    static let appAccentDim = Color(hex: "#4ADE80")
+
+    /// Compatibility aliases. New call sites should prefer `appAccent` or
+    /// `appAccentSoft` so the app does not drift into multiple accent systems.
+    static let cosmicBlue = appAccent
+    static let cosmicBlueDim = appAccentDim
+    static let cameraAccent = appAccent
+    static let cameraAccentSoft = appAccentSoft
+    static let ctaAccent = appAccent
 
     // Accent Colors
     static let nebulaPurple = Color(hex: "#A78BFA")
     static let galaxyPink = Color(hex: "#F472B6")
-    static let auroraGreen = Color(hex: "#86EFAC")
+    static let auroraGreen = appAccentSoft
     static let moonGold = Color(hex: "#FACC15")
     static let meteorTeal = Color(hex: "#2DD4BF")
     static let trailAmber = Color(hex: "#F59E0B")
+
+    // Scientific / data visualization palettes. These are centralized here so
+    // map layers can keep fixed domain colors without hardcoding RGB in views.
+    static let bortleMapOne = Color(hex: "#00FF00")
+    static let bortleMapTwo = Color(hex: "#40FF00")
+    static let bortleMapThree = Color(hex: "#80FF00")
+    static let bortleMapFour = Color(hex: "#FFFF00")
+    static let bortleMapFive = Color(hex: "#FFD600")
+    static let bortleMapSix = Color(hex: "#FFA600")
+    static let bortleMapSeven = Color(hex: "#FF6B00")
+    static let bortleMapEight = Color(hex: "#FF0000")
+    static let bortleMapNine = Color(hex: "#FF1494")
 
     // Text (WCAG AA compliant on dark backgrounds)
     static let textPrimary = Color(hex: "#F8FAFC")      // 15.5:1 contrast
     static let textSecondary = Color(hex: "#CBD5E1")    // 9.8:1 contrast (improved from #94A3B8)
     static let textTertiary = Color(hex: "#94A3B8")     // 5.2:1 contrast
     static let textMuted = Color(hex: "#64748B")        // 3.2:1 for decorative
+
+    // Liquid Glass optical layers. These are intentionally neutral and low
+    // opacity: iOS 26 glass should reveal the camera preview, not behave like
+    // an opaque black panel.
+    static let liquidGlassSurface = Color.starWhite.opacity(0.045)
+    static let liquidGlassSurfacePressed = Color.starWhite.opacity(0.075)
+    static let liquidGlassRim = Color.starWhite.opacity(0.22)
+    static let liquidGlassInnerRim = Color.starWhite.opacity(0.08)
 }
 
 extension Color {
@@ -131,33 +159,14 @@ struct GlowModifier: ViewModifier {
 }
 
 extension View {
-    func glow(color: Color = .cosmicBlue, radius: CGFloat = 8) -> some View {
+    func glow(color: Color = .appAccent, radius: CGFloat = 8) -> some View {
         modifier(GlowModifier(color: color, radius: radius))
     }
 }
 
-// MARK: - Glass Card Style (Enhanced for better visibility)
-struct GlassCardStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                    .fill(Color.spaceSurface.opacity(0.8))  // Increased opacity for better visibility
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                            .stroke(Color.starWhite.opacity(0.15), lineWidth: 1)  // Slightly more visible border
-                    )
-            )
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                    .fill(.ultraThinMaterial)
-            )
-    }
-}
-
 extension View {
-    func glassCard() -> some View {
-        modifier(GlassCardStyle())
+    nonisolated func glassCard() -> some View {
+        liquidGlassCard(cornerRadius: CornerRadius.lg)
     }
 }
 
@@ -184,7 +193,71 @@ struct LiquidGlassModifier<S: Shape>: ViewModifier {
     let isInteractive: Bool
 
     func body(content: Content) -> some View {
-        content.glassEffect(resolvedGlass, in: shape)
+        content
+            .background(
+                shape.fill(
+                    tint.map { $0.opacity(isInteractive ? 0.10 : 0.07) }
+                        ?? Color.liquidGlassSurface
+                )
+            )
+            .overlay {
+                shape
+                    .stroke(Color.liquidGlassInnerRim, lineWidth: 1)
+                    .padding(1)
+            }
+            .glassEffect(resolvedGlass, in: shape)
+            .overlay(alignment: .topLeading) {
+                shape
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.starWhite.opacity(0.42),
+                                Color.starWhite.opacity(0.08),
+                                tint?.opacity(0.30) ?? Color.starWhite.opacity(0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+                    .allowsHitTesting(false)
+            }
+            .overlay(alignment: .topLeading) {
+                shape
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.starWhite.opacity(0.12),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .center
+                        )
+                    )
+                    .allowsHitTesting(false)
+            }
+    }
+
+    private var resolvedGlass: Glass {
+        var glass: Glass = .regular
+        if let tint {
+            glass = glass.tint(tint)
+        }
+        if isInteractive {
+            glass = glass.interactive()
+        }
+        return glass
+    }
+}
+
+struct SystemGlassModifier<S: Shape>: ViewModifier {
+    let shape: S
+    let tint: Color?
+    let isInteractive: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .glassEffect(resolvedGlass, in: shape)
     }
 
     private var resolvedGlass: Glass {
@@ -202,7 +275,7 @@ struct LiquidGlassModifier<S: Shape>: ViewModifier {
 extension View {
     /// Apply the Liquid Glass surface treatment, clipped to an arbitrary
     /// shape. Prefer the convenience helpers below for the common cases.
-    func liquidGlass<S: Shape>(
+    nonisolated func liquidGlass<S: Shape>(
         in shape: S,
         tint: Color? = nil,
         isInteractive: Bool = false
@@ -216,7 +289,7 @@ extension View {
 
     /// Rounded-rectangle Liquid Glass card — used for floating panels,
     /// readouts, and content surfaces.
-    func liquidGlassCard(
+    nonisolated func liquidGlassCard(
         cornerRadius: CGFloat = CornerRadius.lg,
         tint: Color? = nil,
         isInteractive: Bool = false
@@ -230,11 +303,49 @@ extension View {
 
     /// Capsule-shaped Liquid Glass — used for status pills, badges, and
     /// pill-shaped buttons (PRO / LIVE / settings / etc.).
-    func liquidGlassPill(
+    nonisolated func liquidGlassPill(
         tint: Color? = nil,
         isInteractive: Bool = false
     ) -> some View {
         liquidGlass(
+            in: Capsule(style: .continuous),
+            tint: tint,
+            isInteractive: isInteractive
+        )
+    }
+
+    /// Pure iOS 26 system glass with no extra Stakka rim or highlight layers.
+    /// Use this on the camera page when an element should read like native
+    /// system chrome rather than a branded content card.
+    nonisolated func systemGlass<S: Shape>(
+        in shape: S,
+        tint: Color? = nil,
+        isInteractive: Bool = false
+    ) -> some View {
+        modifier(SystemGlassModifier(
+            shape: shape,
+            tint: tint,
+            isInteractive: isInteractive
+        ))
+    }
+
+    nonisolated func systemGlassCard(
+        cornerRadius: CGFloat = CornerRadius.lg,
+        tint: Color? = nil,
+        isInteractive: Bool = false
+    ) -> some View {
+        systemGlass(
+            in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+            tint: tint,
+            isInteractive: isInteractive
+        )
+    }
+
+    nonisolated func systemGlassPill(
+        tint: Color? = nil,
+        isInteractive: Bool = false
+    ) -> some View {
+        systemGlass(
             in: Capsule(style: .continuous),
             tint: tint,
             isInteractive: isInteractive
@@ -253,19 +364,9 @@ enum AnimationPreset {
     static let transition = Animation.easeInOut(duration: 0.25)      // 250ms for state changes
 }
 
-// MARK: - Continuous Corner Modifier
-struct ContinuousCornerModifier: ViewModifier {
-    let radius: CGFloat
-
-    func body(content: Content) -> some View {
-        content
-            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-    }
-}
-
 extension View {
-    func continuousCorners(_ radius: CGFloat) -> some View {
-        modifier(ContinuousCornerModifier(radius: radius))
+    nonisolated func continuousCorners(_ radius: CGFloat) -> some View {
+        clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 }
 
@@ -289,7 +390,7 @@ struct BreathingGlowModifier: ViewModifier {
 }
 
 extension View {
-    func breathingGlow(color: Color = .cosmicBlue, radius: CGFloat = 8) -> some View {
+    func breathingGlow(color: Color = .appAccent, radius: CGFloat = 8) -> some View {
         modifier(BreathingGlowModifier(color: color, radius: radius))
     }
 

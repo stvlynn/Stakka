@@ -5,7 +5,7 @@ import UIKit
 import ImageIO
 import UniformTypeIdentifiers
 
-struct SystemPhotoLibraryRepository: PhotoLibraryRepository {
+struct SystemPhotoLibraryRepository: PhotoLibraryRepository, Sendable {
     func loadFrames(from items: [PhotosPickerItem], kind: StackFrameKind) async -> [StackFrame] {
         var importedFrames: [StackFrame] = []
 

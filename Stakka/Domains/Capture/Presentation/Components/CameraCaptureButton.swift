@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The capture / stop button. Idle state shows the green CTA ring with a
 /// sparkles glyph; capturing state replaces the inner glyph with a stop
-/// square, switches the outer ring into a `cosmicBlue` progress arc, and
+/// square, switches the outer ring into a camera-accent progress arc, and
 /// surfaces a tiny `current/total` caption inside the disc.
 ///
 /// Used in two places:
@@ -25,26 +25,20 @@ struct CameraCaptureButton: View {
                 outerRing
 
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: viewModel.isCapturing
-                                ? [Color.galaxyPink, Color.galaxyPink.opacity(0.8)]
-                                : [Color.auroraGreen, Color.ctaAccent],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.clear)
                     .frame(width: 64, height: 64)
+                    .systemGlass(in: Circle(), tint: Color.appAccent, isInteractive: true)
 
                 if viewModel.isCapturing {
                     captureCounter
                 } else {
                     Image(systemName: "sparkles")
                         .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(Color.spaceBackground)
+                        .foregroundStyle(Color.starWhite)
                 }
             }
         }
+        .buttonStyle(.plain)
         .scaleEffect(viewModel.isCapturing ? 0.92 : 1.0)
         .animation(AnimationPreset.springBouncy, value: viewModel.isCapturing)
         .sensoryFeedback(.selection, trigger: viewModel.isCapturing)
@@ -66,18 +60,16 @@ struct CameraCaptureButton: View {
                 Circle()
                     .trim(from: 0, to: max(0.0001, min(1, viewModel.captureProgress)))
                     .stroke(
-                        Color.cosmicBlue,
+                        Color.appAccent,
                         style: StrokeStyle(lineWidth: 4, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
                     .frame(width: 78, height: 78)
-                    .glow(color: .cosmicBlue, radius: 6)
                     .animation(.linear(duration: 0.4), value: viewModel.captureProgress)
             } else {
                 Circle()
-                    .stroke(Color.ctaAccent, lineWidth: 3.5)
+                    .stroke(Color.appAccent, lineWidth: 3.5)
                     .frame(width: 76, height: 76)
-                    .glow(color: .ctaAccent, radius: 10)
             }
         }
     }

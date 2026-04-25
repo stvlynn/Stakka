@@ -15,8 +15,8 @@ DESTINATION ?= generic/platform=iOS Simulator
 DERIVED_DATA ?= $(ROOT)/.derivedData
 
 # Simulator targets ───────────────────────────────────────────
-# Override on the command line, e.g. `make run SIMULATOR='iPhone 15 Pro'`.
-SIMULATOR ?= iPhone 16 Pro
+# Override on the command line, e.g. `make run SIMULATOR='iPhone 17 Pro Max'`.
+SIMULATOR ?= iPhone 17 Pro
 BUNDLE_ID ?= com.stakka.app
 SIM_DESTINATION = platform=iOS Simulator,name=$(SIMULATOR)
 APP_PATH = $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphonesimulator/$(SCHEME).app

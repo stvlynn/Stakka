@@ -1,4 +1,4 @@
-struct RegisterStackProjectUseCase {
+struct RegisterStackProjectUseCase: Sendable {
     private let processor: any StackingProcessor
 
     init(processor: any StackingProcessor) {

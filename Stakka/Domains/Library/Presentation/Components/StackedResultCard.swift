@@ -9,8 +9,8 @@ struct StackedResultCard: View {
         VStack(spacing: Spacing.md) {
             HStack {
                 Image(systemName: "sparkles")
-                    .foregroundStyle(Color.cosmicBlue)
-                    .breathingGlow(color: .cosmicBlue, radius: 4)
+                    .foregroundStyle(Color.appAccent)
+                    .breathingGlow(color: .appAccent, radius: 4)
 
                 Text(L10n.Library.resultCompleted)
                     .font(.stakkaHeadline)
@@ -20,11 +20,10 @@ struct StackedResultCard: View {
 
                 Text(result.mode.title)
                     .font(.stakkaSmall)
-                    .foregroundStyle(Color.cosmicBlue)
+                    .foregroundStyle(Color.appAccent)
                     .padding(.horizontal, Spacing.sm)
                     .padding(.vertical, 6)
-                    .background(Color.cosmicBlue.opacity(0.12))
-                    .continuousCorners(CornerRadius.md)
+                    .liquidGlassPill(tint: .appAccent)
             }
 
             Image(uiImage: result.image)
@@ -35,14 +34,14 @@ struct StackedResultCard: View {
                     RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
                         .stroke(
                             LinearGradient(
-                                colors: [.cosmicBlue, .nebulaPurple],
+                                colors: [.appAccent, .nebulaPurple],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
                             lineWidth: 2
                         )
                 )
-                .shadow(color: .cosmicBlue.opacity(0.3), radius: 20)
+                .shadow(color: .appAccent.opacity(0.3), radius: 20)
 
             HStack(spacing: Spacing.sm) {
                 metricBadge(symbol: "photo", value: "\(result.frameCount)")
@@ -66,8 +65,8 @@ struct StackedResultCard: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.md)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.cosmicBlue)
+                .buttonStyle(.glassProminent)
+                .tint(.appAccent)
 
                 Button(action: onExportTIFF) {
                     HStack {
@@ -79,7 +78,7 @@ struct StackedResultCard: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.md)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .tint(.starWhite)
             }
         }
@@ -97,7 +96,6 @@ struct StackedResultCard: View {
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, Spacing.sm)
         .padding(.vertical, 6)
-        .background(Color.spaceSurface.opacity(0.55))
-        .continuousCorners(CornerRadius.md)
+        .liquidGlassPill()
     }
 }

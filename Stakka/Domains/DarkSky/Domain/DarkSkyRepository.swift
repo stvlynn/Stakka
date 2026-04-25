@@ -1,5 +1,5 @@
 import CoreLocation
 
-protocol DarkSkyRepository {
+protocol DarkSkyRepository: Sendable {
     func pollution(at coordinate: CLLocationCoordinate2D) async throws -> LightPollution
 }

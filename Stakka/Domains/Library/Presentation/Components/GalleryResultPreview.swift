@@ -41,32 +41,34 @@ struct GalleryResultPreview: View {
     // MARK: - Top bar
 
     private var topBar: some View {
-        HStack {
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(Color.starWhite)
-                    .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
-                    .background(Circle().fill(Color.black.opacity(0.4)))
-            }
-            .accessibilityLabel(L10n.Common.close)
-
-            Spacer()
-
-            Button(action: onOpenProject) {
-                HStack(spacing: 6) {
-                    Text(L10n.Library.openProject)
-                    Image(systemName: "chevron.right")
+        GlassEffectContainer(spacing: Spacing.sm) {
+            HStack {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Color.starWhite)
+                        .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
+                        .liquidGlass(in: Circle(), isInteractive: true)
                 }
-                .font(.stakkaCaption.weight(.semibold))
-                .foregroundStyle(Color.starWhite)
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.sm)
-                .background(
-                    Capsule().fill(Color.cosmicBlue)
-                )
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.Common.close)
+
+                Spacer()
+
+                Button(action: onOpenProject) {
+                    HStack(spacing: 6) {
+                        Text(L10n.Library.openProject)
+                        Image(systemName: "chevron.right")
+                    }
+                    .font(.stakkaCaption.weight(.semibold))
+                    .foregroundStyle(Color.starWhite)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.sm)
+                }
+                .buttonStyle(.glassProminent)
+                .tint(.appAccent)
+                .accessibilityIdentifier("gallery.preview.openProject")
             }
-            .accessibilityIdentifier("gallery.preview.openProject")
         }
         .padding(Spacing.md)
     }
@@ -88,9 +90,7 @@ struct GalleryResultPreview: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
-        .background(
-            Capsule().fill(Color.black.opacity(0.45))
-        )
+        .liquidGlassPill()
         .padding(.bottom, Spacing.xl)
     }
 }

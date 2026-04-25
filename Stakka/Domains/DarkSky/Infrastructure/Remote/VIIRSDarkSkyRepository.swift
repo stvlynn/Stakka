@@ -3,7 +3,7 @@ import Foundation
 
 /// Real implementation using VIIRS-based estimation
 /// Uses distance from major cities and population density heuristics
-struct VIIRSDarkSkyRepository: DarkSkyRepository {
+struct VIIRSDarkSkyRepository: DarkSkyRepository, Sendable {
     func pollution(at coordinate: CLLocationCoordinate2D) async throws -> LightPollution {
         // Calculate distance to nearest major city
         let nearestCityDistance = distanceToNearestMajorCity(from: coordinate)

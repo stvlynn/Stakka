@@ -6,11 +6,11 @@ struct DarkSkyInfoCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             header
-            Divider().overlay(Color.spaceSurfaceElevated)
+            Divider().overlay(Color.starWhite.opacity(0.10))
             coordinateRow
-            Divider().overlay(Color.spaceSurfaceElevated)
+            Divider().overlay(Color.starWhite.opacity(0.10))
             metricsSection
-            Divider().overlay(Color.spaceSurfaceElevated)
+            Divider().overlay(Color.starWhite.opacity(0.10))
             visibilitySection
         }
         .padding(Spacing.md)
@@ -20,9 +20,9 @@ struct DarkSkyInfoCard: View {
     private var header: some View {
         HStack {
             Image(systemName: "sparkles")
-                .foregroundStyle(Color.cosmicBlue)
+                .foregroundStyle(Color.appAccent)
                 .font(.title3)
-                .breathingGlow(color: .cosmicBlue, radius: 4)
+                .breathingGlow(color: .appAccent, radius: 4)
 
             Text(L10n.DarkSky.cardTitle)
                 .font(.stakkaHeadline)

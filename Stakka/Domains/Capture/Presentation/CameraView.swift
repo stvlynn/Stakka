@@ -40,7 +40,6 @@ struct CameraView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
-            .toolbar(.hidden, for: .tabBar)
             .preferredColorScheme(.dark)
         }
     }
@@ -74,20 +73,6 @@ struct CameraView: View {
 
     private var cameraOverlayChrome: some View {
         VStack(spacing: Spacing.md) {
-            if !viewModel.isCapturing {
-                CameraTopBarView(
-                    mode: viewModel.astroMode,
-                    isCapturing: viewModel.isCapturing,
-                    isSettingsPresented: viewModel.showSettings
-                ) {
-                    withAnimation(AnimationPreset.springBouncy) {
-                        viewModel.showSettings.toggle()
-                    }
-                }
-                .padding(.top, Spacing.sm)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
             topPreviewOverlay
 
             Spacer(minLength: 0)
@@ -109,6 +94,10 @@ struct CameraView: View {
                 }
             }
             .transition(.move(edge: .top).combined(with: .opacity))
+        } else if !viewModel.isCapturing {
+            topControlsBar
+                .padding(.top, Spacing.sm)
+                .transition(.move(edge: .top).combined(with: .opacity))
         } else {
             CameraHUDView(
                 aperture: viewModel.aperture,
@@ -119,6 +108,36 @@ struct CameraView: View {
             .padding(.top, viewModel.isCapturing ? Spacing.sm : 0)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
+    }
+
+    private var topControlsBar: some View {
+        GlassEffectContainer(spacing: Spacing.md) {
+            HStack(spacing: Spacing.md) {
+                CameraHUDView(
+                    aperture: viewModel.aperture,
+                    shutterSpeed: viewModel.shutterSpeed,
+                    iso: "ISO Auto",
+                    zoom: viewModel.zoomLevel
+                )
+
+                Spacer(minLength: 0)
+
+                Button {
+                    withAnimation(AnimationPreset.springBouncy) {
+                        viewModel.showSettings.toggle()
+                    }
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.starWhite)
+                        .frame(width: 56, height: 44)
+                }
+                .buttonStyle(.glass)
+                .tint(viewModel.showSettings ? Color.appAccent : Color.starWhite)
+                .accessibilityLabel(L10n.Accessibility.openSettings)
+            }
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
     }
 
     @ViewBuilder
@@ -151,7 +170,7 @@ struct CameraView: View {
     private func captureProjectCard(title: String) -> some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "sparkles.rectangle.stack.fill")
-                .foregroundStyle(Color.cosmicBlue)
+                .foregroundStyle(Color.appAccent)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(L10n.Camera.recentProjectSaved)
@@ -166,7 +185,7 @@ struct CameraView: View {
             Spacer()
         }
         .padding(Spacing.md)
-        .liquidGlassCard(cornerRadius: CornerRadius.lg, tint: Color.cosmicBlue)
+        .systemGlassCard(cornerRadius: CornerRadius.lg, tint: Color.appAccent)
     }
 
     private func liveStackCard(image: UIImage) -> some View {
@@ -194,7 +213,7 @@ struct CameraView: View {
             Spacer(minLength: 0)
         }
         .padding(Spacing.sm)
-        .liquidGlassCard(cornerRadius: CornerRadius.lg)
+        .systemGlassCard(cornerRadius: CornerRadius.lg)
         .accessibilityElement(children: .combine)
     }
 
@@ -210,94 +229,6 @@ struct CameraView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.76)
         }
-    }
-}
-
-private struct CameraTopBarView: View {
-    let mode: AstroCaptureMode
-    let isCapturing: Bool
-    let isSettingsPresented: Bool
-    let onSettings: () -> Void
-
-    var body: some View {
-        // Top bar's three pills (PRO / LIVE / settings) live in a single
-        // GlassEffectContainer so they share a sampling region — without
-        // the container each pill samples background independently and the
-        // rim highlights drift apart.
-        GlassEffectContainer(spacing: Spacing.md) {
-            HStack(spacing: Spacing.md) {
-                proPill
-                    .frame(width: 96, alignment: .leading)
-
-                Spacer(minLength: Spacing.sm)
-
-                livePill
-                    .frame(maxWidth: 156)
-
-                Spacer(minLength: Spacing.sm)
-
-                settingsButton
-                    .frame(width: 96, alignment: .trailing)
-            }
-        }
-        .dynamicTypeSize(...DynamicTypeSize.xLarge)
-    }
-
-    private var proPill: some View {
-        HStack(spacing: 0) {
-            Spacer(minLength: 0)
-            Text(L10n.Camera.proBadge)
-                .font(.stakkaCaption)
-                .foregroundStyle(Color.spaceBackground)
-                .padding(.horizontal, Spacing.md)
-                .frame(height: 36)
-                .background(Color.auroraGreen, in: Capsule(style: .continuous))
-        }
-        .padding(4)
-        .frame(height: 44)
-        .liquidGlassPill(tint: Color.auroraGreen)
-        .accessibilityLabel(L10n.Camera.proBadge)
-    }
-
-    private var livePill: some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: mode.systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.textTertiary)
-                .accessibilityHidden(true)
-
-            Circle()
-                .fill(isCapturing ? Color.galaxyPink : Color.ctaAccent)
-                .frame(width: 9, height: 9)
-                .breathingGlow(color: isCapturing ? .galaxyPink : .ctaAccent, radius: 4)
-
-            Text(mode.localizedTitle)
-                .font(.stakkaNumericSmall)
-                .foregroundStyle(Color.starWhite)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
-        }
-        .padding(.horizontal, Spacing.md)
-        .frame(height: 48)
-        .frame(maxWidth: .infinity)
-        .liquidGlassPill(tint: isCapturing ? .galaxyPink : nil)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(L10n.Camera.liveStatus), \(mode.localizedTitle)")
-    }
-
-    private var settingsButton: some View {
-        Button(action: onSettings) {
-            Image(systemName: "slider.horizontal.3")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(isSettingsPresented ? Color.spaceBackground : Color.starWhite)
-                .frame(width: 72, height: 44)
-                .liquidGlassPill(
-                    tint: isSettingsPresented ? Color.auroraGreen : nil,
-                    isInteractive: true
-                )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(L10n.Accessibility.openSettings)
     }
 }
 
@@ -331,19 +262,15 @@ extension AstroCaptureMode {
 
     var accent: Color {
         switch self {
-        case .milkyWay: return .cosmicBlue
-        case .starTrails: return .trailAmber
-        case .moon: return .moonGold
-        case .meteor: return .meteorTeal
+        case .milkyWay, .starTrails, .moon, .meteor:
+            return .appAccent
         }
     }
 
     var secondaryAccent: Color {
         switch self {
-        case .milkyWay: return .nebulaPurple
-        case .starTrails: return .galaxyPink
-        case .moon: return .starWhite
-        case .meteor: return .auroraGreen
+        case .milkyWay, .starTrails, .moon, .meteor:
+            return .appAccentSoft
         }
     }
 

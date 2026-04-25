@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct StackedTIFFDocument: FileDocument {
-    static var readableContentTypes: [UTType] = [.tiff]
+    static let readableContentTypes: [UTType] = [.tiff]
 
     let data: Data
 

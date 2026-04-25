@@ -105,7 +105,7 @@ struct WizardThumbnailStrip: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Color.spaceSurfaceElevated
+                Color.liquidGlassSurface
                 ProgressView()
                     .controlSize(.small)
                     .tint(Color.textSecondary)
@@ -160,8 +160,9 @@ struct WizardPhotoPreview: View {
                             .font(.title3)
                             .foregroundStyle(Color.starWhite)
                             .frame(width: Spacing.touchTarget, height: Spacing.touchTarget)
-                            .background(Circle().fill(Color.black.opacity(0.5)))
+                            .liquidGlass(in: Circle(), isInteractive: true)
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel(L10n.Wizard.previewClose)
                 }
                 .padding(Spacing.md)
@@ -174,7 +175,7 @@ struct WizardPhotoPreview: View {
                     .monospacedDigit()
                     .padding(.horizontal, Spacing.md)
                     .padding(.vertical, Spacing.xs)
-                    .background(Capsule().fill(Color.black.opacity(0.5)))
+                    .liquidGlassPill()
                     .padding(.bottom, Spacing.xl)
             }
         }

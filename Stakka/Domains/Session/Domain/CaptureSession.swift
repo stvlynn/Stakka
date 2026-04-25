@@ -1,7 +1,7 @@
 import CoreLocation
 import Foundation
 
-struct CaptureSession: Identifiable, Codable {
+struct CaptureSession: Identifiable, Codable, Sendable {
     let id: UUID
     let date: Date
     let location: CLLocationCoordinate2D?

@@ -33,8 +33,7 @@ struct StackFrameSectionView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color.starWhite)
                         .frame(width: 34, height: 34)
-                        .background(Color.cosmicBlue)
-                        .continuousCorners(CornerRadius.md)
+                        .liquidGlassCard(cornerRadius: CornerRadius.md, tint: .appAccent, isInteractive: true)
                 }
                 .disabled(isWorking)
                 .accessibilityLabel(L10n.Accessibility.importPhotos(kind: kind.title))
@@ -46,8 +45,7 @@ struct StackFrameSectionView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color.starWhite)
                         .frame(width: 34, height: 34)
-                        .background(Color.spaceSurfaceElevated)
-                        .continuousCorners(CornerRadius.md)
+                        .liquidGlassCard(cornerRadius: CornerRadius.md, isInteractive: true)
                 }
                 .buttonStyle(.plain)
                 .disabled(isWorking)
@@ -59,8 +57,7 @@ struct StackFrameSectionView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.galaxyPink)
                             .frame(width: 34, height: 34)
-                            .background(Color.galaxyPink.opacity(0.12))
-                            .continuousCorners(CornerRadius.md)
+                            .liquidGlassCard(cornerRadius: CornerRadius.md, tint: .galaxyPink, isInteractive: true)
                     }
                     .buttonStyle(.plain)
                     .disabled(isWorking)
@@ -132,8 +129,7 @@ struct StackFrameSectionView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Spacing.xl)
-        .background(Color.spaceSurface.opacity(0.4))
-        .continuousCorners(CornerRadius.lg)
+        .liquidGlassCard(cornerRadius: CornerRadius.lg)
     }
 }
 
@@ -164,8 +160,11 @@ private struct StackFrameThumbnailCard: View {
                                         .font(.system(size: 12, weight: .semibold))
                                         .foregroundStyle(cometAnnotation?.requiresReview == false ? Color.starWhite : Color.textSecondary)
                                         .frame(width: 28, height: 28)
-                                        .background(cometAnnotation?.requiresReview == false ? Color.nebulaPurple : Color.spaceSurface.opacity(0.8))
-                                        .continuousCorners(CornerRadius.md)
+                                        .liquidGlassCard(
+                                            cornerRadius: CornerRadius.md,
+                                            tint: cometAnnotation?.requiresReview == false ? Color.nebulaPurple : nil,
+                                            isInteractive: true
+                                        )
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(L10n.Accessibility.reviewCometAnnotation)
@@ -177,8 +176,11 @@ private struct StackFrameThumbnailCard: View {
                                         .font(.system(size: 12, weight: .semibold))
                                         .foregroundStyle(isReference ? Color.starWhite : Color.textSecondary)
                                         .frame(width: 28, height: 28)
-                                        .background(isReference ? Color.cosmicBlue : Color.spaceSurface.opacity(0.8))
-                                        .continuousCorners(CornerRadius.md)
+                                        .liquidGlassCard(
+                                            cornerRadius: CornerRadius.md,
+                                            tint: isReference ? Color.appAccent : nil,
+                                            isInteractive: true
+                                        )
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(L10n.Accessibility.setReferenceFrame)
@@ -191,7 +193,7 @@ private struct StackFrameThumbnailCard: View {
                     Button(action: onToggle) {
                         Image(systemName: frame.isEnabled ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 18))
-                            .foregroundStyle(frame.isEnabled ? Color.cosmicBlue : Color.textTertiary)
+                            .foregroundStyle(frame.isEnabled ? Color.appAccent : Color.textTertiary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(frame.isEnabled ? L10n.Accessibility.disableFrame : L10n.Accessibility.enableFrame)
@@ -240,8 +242,7 @@ private struct StackFrameThumbnailCard: View {
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.spaceSurface.opacity(0.55))
-        .continuousCorners(CornerRadius.sm)
+        .liquidGlassPill()
     }
 
     private func formatted(_ value: Double?) -> String {

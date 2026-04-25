@@ -12,39 +12,41 @@ struct StackActionBar: View {
     let action: () -> Void
 
     var body: some View {
-        VStack(spacing: Spacing.sm) {
-            if let errorMessage {
-                toast(
-                    symbol: "exclamationmark.triangle.fill",
-                    tint: .galaxyPink,
-                    message: errorMessage
-                )
-            }
+        GlassEffectContainer(spacing: Spacing.sm) {
+            VStack(spacing: Spacing.sm) {
+                if let errorMessage {
+                    toast(
+                        symbol: "exclamationmark.triangle.fill",
+                        tint: .galaxyPink,
+                        message: errorMessage
+                    )
+                }
 
-            if let progress, phase != .idle {
-                progressPanel(progress)
-            } else if phase != .idle {
-                // Fallback: we know we're working, but no progress data yet
-                // (usually the first tick before the processor reports).
-                toast(
-                    symbol: phase.symbolName,
-                    tint: .cosmicBlue,
-                    message: phase.title,
-                    showsSpinner: true
-                )
-            }
+                if let progress, phase != .idle {
+                    progressPanel(progress)
+                } else if phase != .idle {
+                    // Fallback: we know we're working, but no progress data yet
+                    // (usually the first tick before the processor reports).
+                    toast(
+                        symbol: phase.symbolName,
+                        tint: .appAccent,
+                        message: phase.title,
+                        showsSpinner: true
+                    )
+                }
 
-            primaryButton
+                primaryButton
+            }
         }
         .padding(.horizontal, Spacing.md)
         .padding(.top, Spacing.sm)
         .padding(.bottom, Spacing.md)
-        .background(
+        .background {
             Rectangle()
-                .fill(.ultraThinMaterial)
-                .overlay(Color.spaceBackground.opacity(0.55))
+                .fill(Color.liquidGlassSurface)
+                .glassEffect(.regular, in: Rectangle())
                 .ignoresSafeArea(edges: .bottom)
-        )
+        }
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(Color.starWhite.opacity(0.08))
@@ -67,16 +69,10 @@ struct StackActionBar: View {
             .foregroundStyle(Color.starWhite)
             .frame(maxWidth: .infinity)
             .frame(minHeight: Spacing.touchTarget)
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                    .fill(isEnabled ? Color.cosmicBlue : Color.spaceSurfaceElevated)
-            )
-            .shadow(
-                color: isEnabled ? Color.cosmicBlue.opacity(0.35) : .clear,
-                radius: 10, y: 4
-            )
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glassProminent)
+        .tint(isEnabled ? Color.appAccent : Color.textMuted)
         .disabled(!isEnabled)
         .accessibilityLabel(L10n.Library.startStacking)
         .accessibilityIdentifier("library.startStacking")
@@ -93,7 +89,7 @@ struct StackActionBar: View {
             HStack(spacing: Spacing.sm) {
                 ProgressView()
                     .controlSize(.small)
-                    .tint(.cosmicBlue)
+                    .tint(.appAccent)
                 Text(stageTitle(progress.stage))
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
@@ -111,11 +107,11 @@ struct StackActionBar: View {
             // otherwise.
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(Color.spaceSurfaceElevated.opacity(0.8))
+                    .fill(Color.starWhite.opacity(0.14))
                     .frame(height: 6)
                 GeometryReader { geo in
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(Color.cosmicBlue)
+                        .fill(Color.appAccent)
                         .frame(width: max(8, geo.size.width * progress.stageFraction), height: 6)
                 }
                 .frame(height: 6)
@@ -139,14 +135,7 @@ struct StackActionBar: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .fill(Color.cosmicBlue.opacity(0.12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                        .stroke(Color.cosmicBlue.opacity(0.3), lineWidth: 1)
-                )
-        )
+        .liquidGlassCard(cornerRadius: CornerRadius.md, tint: .appAccent)
     }
 
     private func stageTitle(_ stage: StackingProgressStage) -> String {
@@ -166,9 +155,7 @@ struct StackActionBar: View {
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, Spacing.xs)
         .padding(.vertical, 2)
-        .background(
-            Capsule().fill(Color.spaceSurface.opacity(0.6))
-        )
+        .liquidGlassPill()
     }
 
     private func formatted(_ value: Double) -> String {
@@ -204,13 +191,6 @@ struct StackActionBar: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .fill(tint.opacity(0.14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                        .stroke(tint.opacity(0.3), lineWidth: 1)
-                )
-        )
+        .liquidGlassCard(cornerRadius: CornerRadius.md, tint: tint)
     }
 }

@@ -6,7 +6,7 @@ struct ProcessingStatusCard: View {
     var body: some View {
         HStack(spacing: Spacing.md) {
             ProgressView()
-                .tint(.cosmicBlue)
+                .tint(.appAccent)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {

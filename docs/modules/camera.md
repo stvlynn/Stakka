@@ -10,7 +10,7 @@ panels — is rendered through the project's Liquid Glass helpers
 which delegate to the native iOS 26 `glassEffect(_:in:)` API.
 
 Active states pass a `tint:` argument so selected controls (e.g. an
-active inline picker button) pick up the accent color (`cosmicBlue`)
+active inline picker button) pick up the app accent color (`appAccent`)
 on the rim and reflection. Tappable surfaces pass
 `isInteractive: true` so the system applies its dynamic light response
 on touch.
@@ -18,12 +18,10 @@ on touch.
 Three regions on the page wrap their adjacent glass surfaces in a
 single `GlassEffectContainer` so the surfaces share a sampling region:
 
-1. **Top bar** — `PRO` badge, `LIVE` status pill, settings button.
-2. **Idle bottom stack** — mode selector card (with its inner title
-   pill) + the inline horizontal wheel + the drawer card and all the
-   control buttons inside it.
-3. **Settings panel** — the panel surface + the preset mode rows,
-   readout grid, and interval stepper card inside it.
+1. **Top controls bar** — compact parameter HUD + settings button.
+2. **Idle bottom stack** — mode selector rows + the inline horizontal
+  wheel + the drawer card and all controls inside it.
+3. **Settings panel** — the panel surface + interval stepper.
 
 See `docs/modules/design-system.md` for the helper API and
 `Glass`-level configuration.
@@ -140,12 +138,14 @@ presets. It is **only visible when the drawer is expanded** — switching
 astro mode is a deliberate, occasional action, not part of the framing
 loop.
 
-| Mode | UI label | Preset intent | Live stack strategy |
-|---|---|---|---|
-| `milkyWay` | 银河 / Milky Way | Wide-field stack, 15s frames | `deepSky` + registration + kappa-sigma |
-| `starTrails` | 星轨 / Star Trails | Long sequence, 30s frames | fixed tripod + maximum blend |
-| `moon` | 月亮 / Moon | Short exposure, 1/125-style shutter | `lunar` + registration + median kappa |
-| `meteor` | 流星 / Meteor | Fast cadence, 20s frames | fixed tripod + maximum blend |
+
+| Mode         | UI label         | Preset intent                       | Live stack strategy                    |
+| ------------ | ---------------- | ----------------------------------- | -------------------------------------- |
+| `milkyWay`   | 银河 / Milky Way   | Wide-field stack, 15s frames        | `deepSky` + registration + kappa-sigma |
+| `starTrails` | 星轨 / Star Trails | Long sequence, 30s frames           | fixed tripod + maximum blend           |
+| `moon`       | 月亮 / Moon        | Short exposure, 1/125-style shutter | `lunar` + registration + median kappa  |
+| `meteor`     | 流星 / Meteor      | Fast cadence, 20s frames            | fixed tripod + maximum blend           |
+
 
 Selecting a mode calls `CameraViewModel.applyAstroMode(_:)`, updating exposure, shot count, interval, aperture, shutter, zoom, shooting mode UI state, and the `LiveStackingStrategy` used for the capture session. Supported AVFoundation device controls are applied during still capture.
 
@@ -175,7 +175,7 @@ The capture control menu lives below the star mode selector. It supports drag-to
 ```
 
 - Left button: Exposure time → toggles inline `HorizontalWheelPicker`
-  with 0.1-30s options above the drawer
+with 0.1-30s options above the drawer
 - Center button: `CameraCaptureButton`, see "CameraCaptureButton" below.
 - Right button: Shot count → toggles inline wheel with 2-100 options
 
@@ -220,16 +220,18 @@ DragGesture().onEnded { value in
 Shared disc-shaped capture / stop button used in two places:
 
 - **Inline** at the center of the `AdvancedControlsMenu` while idle,
-  acting as the primary CTA.
+acting as the primary CTA.
 - **Floating** as the only on-screen control while a capture sequence is
-  running, so the live preview reads fullscreen.
+running, so the live preview reads fullscreen.
 
 Visual states:
 
-| State      | Inner glyph                                                          | Outer ring                                                 |
-| ---------- | -------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Idle       | `sparkles` icon over an `auroraGreen → ctaAccent` gradient disc     | Static `ctaAccent` stroke with a soft glow                 |
-| Capturing  | Rounded stop square + monospaced `current/total` caption             | `starWhite` track + animated `cosmicBlue` progress arc     |
+
+| State     | Inner glyph                                                        | Outer ring                                            |
+| --------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| Idle      | `sparkles` icon over the native glass disc tinted with `appAccent` | Static `appAccent` stroke with a soft glow            |
+| Capturing | Rounded stop square + monospaced `current/total` caption           | `starWhite` track + animated `appAccent` progress arc |
+
 
 Tapping the button calls `viewModel.startStackingCapture()` or
 `viewModel.stopStackingCapture()` depending on the current state. The
@@ -268,25 +270,26 @@ HorizontalWheelPicker(
 Implementation notes:
 
 - Uses iOS 17 `scrollPosition(id:)` + `scrollTargetBehavior(.viewAligned)`
-  for momentum + snap.
+for momentum + snap.
 - `contentMargins(.horizontal, sideInset, for: .scrollContent)` centers
-  the first/last item.
+the first/last item.
 - A symmetric `LinearGradient` mask fades the edges so the wheel reads
-  as a continuous strip.
+as a continuous strip.
 - Per-item `visualEffect` fades and scales items based on their
-  distance from the scroll-view center for a continuous-rotation feel.
+distance from the scroll-view center for a continuous-rotation feel.
 - `sensoryFeedback(.selection, trigger: scrollPositionID)` fires a
-  light haptic on each snap.
+light haptic on each snap.
 
 `Item` only needs to conform to `Hashable`; the value itself is used
 as the SwiftUI identity for snapping.
 
 ## CameraSettingsView
 
-Settings panel (presented inside the camera preview, not as a sheet). The panel follows the screenshot-style dark overlay with a compact header and close action. Contains:
+Settings panel (presented inside the camera preview, not as a sheet).
+The panel is intentionally narrow in scope so it does not duplicate
+controls already visible in the top HUD or bottom drawer. It currently
+contains:
 
-- **预设 (Preset)** — Milky Way / Star Trails / Moon / Meteor rows
-- **Readouts** — exposure, shot count, interval, and zoom
 - **Interval stepper** — icon-only plus/minus controls for timing tweaks
 
 No traditional sliders are used. Detailed numeric changes still use wheel pickers or icon steppers.
@@ -300,7 +303,7 @@ ZStack
 ├── Space background
 ├── CameraPreviewView (edge-to-edge AVCaptureVideoPreviewLayer with a
 │       top↘bottom darkening gradient overlay so chrome stays legible)
-├── Overlay chrome (top bar + HUD/settings panel + bottom feedback)
+├── Overlay chrome (top controls bar + settings panel + bottom feedback)
 └── CameraControlsView
     ├── Idle state
     │   ├── AstroModeSelectorView          ← only when the drawer is
@@ -317,17 +320,21 @@ ZStack
 so the live preview reads as the canvas. The differences between idle
 and capturing modes are entirely in the overlay layer:
 
-| Surface              | Idle                                                                 | Capturing                                                |
-| -------------------- | -------------------------------------------------------------------- | -------------------------------------------------------- |
-| Top bar              | PRO pill + live status pill + settings button                        | Hidden (slides up + fades out)                           |
-| HUD strip            | Aperture · shutter · ISO · zoom (or settings panel when toggled)     | Same HUD; settings panel is suppressed                   |
-| Live stack card      | Shown only when a previous stack snapshot exists                     | Always shown above the floating capture button          |
-| Bottom controls deck | Drawer + inline `CameraCaptureButton`. Astro mode cards reveal only when the drawer is dragged up. | Replaced by a floating `CameraCaptureButton` only        |
-| Bottom safe area pad | `318 pt` reserves space for the deck                                 | `132 pt` lets the preview run almost edge-to-edge        |
 
-The navigation bar is hidden for the camera tab so the in-view chrome
-can match the Dynamic Island-style reference. State changes between
-idle and capturing animate with `AnimationPreset.smooth`.
+| Surface              | Idle                                                                                               | Capturing                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Top controls bar     | Aperture · shutter · ISO · zoom HUD + settings button                                              | Hidden (slides up + fades out)                    |
+| Settings panel       | Interval stepper when settings is toggled                                                          | Suppressed                                        |
+| Live stack card      | Shown only when a previous stack snapshot exists                                                   | Always shown above the floating capture button    |
+| Bottom controls deck | Drawer + inline `CameraCaptureButton`. Astro mode cards reveal only when the drawer is dragged up. | Replaced by a floating `CameraCaptureButton` only |
+| Bottom safe area pad | `318 pt` reserves space for the deck                                                               | `132 pt` lets the preview run almost edge-to-edge |
+
+
+The navigation bar is hidden for the camera tab so the preview can act
+as the primary iOS camera canvas. The app tab bar remains visible in all
+camera states so global navigation is stable while the camera chrome
+itself enters and exits fullscreen capture layouts. State changes
+between idle and capturing animate with `AnimationPreset.smooth`.
 
 ## Data Flow
 
@@ -342,8 +349,8 @@ User tap (exposure button)
 User drags / taps an item on the wheel
     → scrollPositionID snaps to the closest item
     → onChange(scrollPositionID) calls viewModel.updateExposureTime(...)
-    → CameraHUDView, advancedControlButton readouts, and the
-      preset code chip refresh from @Published state
+    → CameraHUDView and advancedControlButton readouts refresh from
+      @Published state
 
 User taps the same control again, or the wheel’s × button
     → viewModel.dismissInlineControl()
@@ -381,14 +388,14 @@ astroModes: [AstroCaptureMode] = [.milkyWay, .starTrails, .moon, .meteor]
 
 1. Add a `@Published` property to `CameraViewModel` for the new value.
 2. Add a case to the `CameraInlineControl` enum at the bottom of
-   `CameraViewModel.swift`.
+  `CameraViewModel.swift`.
 3. Add the option array as a `static let` in the
-   `extension AdvancedControlsMenu` at the bottom of
+  `extension AdvancedControlsMenu` at the bottom of
    `AdvancedControlsMenu.swift`.
 4. Add a `case` in `AdvancedControlsMenu.wheel(for:)` that mounts a
-   `HorizontalWheelPicker` bound to the new property.
+  `HorizontalWheelPicker` bound to the new property.
 5. Add a `controlButton` (primary row) or `advancedControlButton`
-   (secondary row) entry that calls `toggle(.<yourCase>)`.
+  (secondary row) entry that calls `toggle(.<yourCase>)`.
 6. Wire the value into any HUD readouts or the device repository.
 
 The capture/stop button itself does not need to change — both the
@@ -413,3 +420,4 @@ Relevant code:
 - `Domains/Stacking/Infrastructure/CoreImage/ImageLiveStackingSession.swift`
 - `Domains/Stacking/Application/ReplaceRecentStackProjectWithCapturedFramesUseCase.swift`
 - `Domains/Library/Presentation/LibraryStackingViewModel.swift`
+

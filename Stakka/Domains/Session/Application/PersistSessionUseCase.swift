@@ -1,9 +1,9 @@
 import Foundation
 
-struct PersistSessionUseCase {
-    private let repository: SessionRepository
+struct PersistSessionUseCase: Sendable {
+    private let repository: any SessionRepository
 
-    init(repository: SessionRepository) {
+    init(repository: any SessionRepository) {
         self.repository = repository
     }
 

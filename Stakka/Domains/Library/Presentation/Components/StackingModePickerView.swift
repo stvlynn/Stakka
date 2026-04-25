@@ -28,12 +28,11 @@ struct StackingModePickerView: View {
                         .foregroundStyle(selectedMode == mode ? Color.starWhite : Color.textSecondary)
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, 10)
-                        .background(selectedMode == mode ? Color.cosmicBlue.opacity(0.28) : Color.spaceSurface.opacity(0.6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                                .stroke(selectedMode == mode ? Color.cosmicBlue : Color.clear, lineWidth: 1)
+                        .liquidGlassCard(
+                            cornerRadius: CornerRadius.md,
+                            tint: selectedMode == mode ? Color.appAccent : nil,
+                            isInteractive: true
                         )
-                        .continuousCorners(CornerRadius.md)
                     }
                     .buttonStyle(.plain)
                 }

@@ -28,8 +28,7 @@ struct CometReviewStatusCard: View {
                     .foregroundStyle(Color.nebulaPurple)
                     .padding(.horizontal, Spacing.sm)
                     .padding(.vertical, 6)
-                    .background(Color.nebulaPurple.opacity(0.14))
-                    .continuousCorners(CornerRadius.md)
+                    .liquidGlassPill(tint: .nebulaPurple)
                     .monospacedDigit()
             }
 
@@ -49,7 +48,7 @@ struct CometReviewStatusCard: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.md)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.glassProminent)
             .tint(.nebulaPurple)
         }
         .padding(Spacing.md)
@@ -66,7 +65,6 @@ struct CometReviewStatusCard: View {
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, Spacing.sm)
         .padding(.vertical, 6)
-        .background(Color.spaceSurface.opacity(0.55))
-        .continuousCorners(CornerRadius.md)
+        .liquidGlassPill()
     }
 }

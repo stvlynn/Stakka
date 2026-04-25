@@ -44,12 +44,11 @@ struct CometModePickerView: View {
             .foregroundStyle(isSelected ? Color.starWhite : Color.textSecondary)
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, 10)
-            .background(isSelected ? Color.nebulaPurple.opacity(0.26) : Color.spaceSurface.opacity(0.6))
-            .overlay(
-                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                    .stroke(isSelected ? Color.nebulaPurple : Color.clear, lineWidth: 1)
+            .liquidGlassCard(
+                cornerRadius: CornerRadius.md,
+                tint: isSelected ? Color.nebulaPurple : nil,
+                isInteractive: true
             )
-            .continuousCorners(CornerRadius.md)
         }
         .buttonStyle(.plain)
     }

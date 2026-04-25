@@ -1,6 +1,7 @@
 import CoreLocation
 
-final class CoreLocationService: NSObject, CLLocationManagerDelegate {
+@MainActor
+final class CoreLocationService: NSObject, @preconcurrency CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var locationContinuation: CheckedContinuation<CLLocationCoordinate2D?, Error>?
 

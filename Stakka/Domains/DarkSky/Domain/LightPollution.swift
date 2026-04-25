@@ -1,7 +1,7 @@
 import Foundation
 import CoreLocation
 
-struct LightPollution {
+struct LightPollution: Sendable {
     let coordinate: CLLocationCoordinate2D
     let pollutionLevel: Double
     let bortleLevel: BortleLevel

@@ -71,7 +71,7 @@ struct LightPollutionMapView: UIViewRepresentable {
             let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView
                 ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
 
-            view.markerTintColor = UIColor(red: 0.23, green: 0.51, blue: 0.96, alpha: 1)
+            view.markerTintColor = UIColor(Color.appAccent)
             view.glyphImage = UIImage(systemName: "sparkle")
             return view
         }

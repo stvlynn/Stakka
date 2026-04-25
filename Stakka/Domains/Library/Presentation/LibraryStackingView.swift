@@ -91,7 +91,6 @@ struct LibraryStackingView: View {
         }
         .navigationTitle(L10n.Library.title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .task {
             if let openProjectID {

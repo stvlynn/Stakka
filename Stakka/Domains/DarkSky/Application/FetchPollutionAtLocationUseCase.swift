@@ -1,9 +1,9 @@
 import CoreLocation
 
-struct FetchPollutionAtLocationUseCase {
-    private let repository: DarkSkyRepository
+struct FetchPollutionAtLocationUseCase: Sendable {
+    private let repository: any DarkSkyRepository
 
-    init(repository: DarkSkyRepository) {
+    init(repository: any DarkSkyRepository) {
         self.repository = repository
     }
 

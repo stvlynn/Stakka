@@ -1,6 +1,10 @@
 # Design System
 
-Stakka uses a centralized design system defined in `Core/Utilities/DesignSystem.swift`. All UI components consume from this system. No hardcoded values in views.
+Stakka uses a centralized design system defined in `Platform/DesignSystem/DesignSystem.swift`.
+The design system aligns feature UI with Apple's Human Interface
+Guidelines first, then adds the app's astronomy theme through a small set
+of semantic tokens. All UI components consume from this system. No
+hardcoded values in views.
 
 ## File
 
@@ -10,31 +14,62 @@ Platform/DesignSystem/
 └── Extensions.swift      # Shared Swift / Combine helpers
 ```
 
+## iOS Alignment Principles
+
+Stakka UI should feel like an iOS app before it feels branded. Apply the
+HIG principles in this order:
+
+1. **Clarity** — use legible system typography, SF Symbols, concise copy,
+   and obvious state changes.
+2. **Deference** — let camera preview, stacked images, and map content
+   lead; chrome should stay light and avoid nested surfaces.
+3. **Depth** — use native iOS 26 Liquid Glass, system navigation, sheets,
+   search, tab bars, and lists to communicate hierarchy.
+
+### Native Component Rules
+
+- Prefer `NavigationStack`, `TabView` with `Tab(...)`, `.searchable`,
+  system sheets, `ProgressView`, `PhotosPicker`, and SwiftUI `Button`
+  styles before building custom controls.
+- Use `.buttonStyle(.glass)` and `.buttonStyle(.glassProminent)` for
+  tappable glass buttons where the system style fits.
+- Use custom drawing only when the product needs a domain-specific
+  control, such as the capture progress ring or camera wheel picker.
+- When a custom control is necessary, keep it iOS-like: 44 pt minimum
+  touch targets, SF Symbols, Dynamic Type-compatible text, clear
+  accessibility labels, and system haptics.
+- Do not recreate system search bars, tab bars, segmented controls,
+  modal sheets, or loading indicators with ad hoc shapes.
+
 ## Color Palette
 
 ```swift
 // Backgrounds
-Color.spaceBackground       // #0B0B10 — deep space black
-Color.spaceSurface          // #18181B — elevated surface
-Color.spaceSurfaceElevated  // #27272A — double-elevated surface
+Color.spaceBackground       // #0F172A — deep space black
+Color.spaceSurface          // #1E293B — elevated surface
+Color.spaceSurfaceElevated  // #334155 — double-elevated surface
 
 // Primary
 Color.starWhite             // #F8FAFC — primary text and icons
-Color.cosmicBlue            // #3B82F6 — primary accent
-Color.cosmicBlueDim         // #60A5FA — dimmed accent
+Color.appAccent             // #22C55E — app-wide active / CTA / progress accent
+Color.appAccentSoft         // #86EFAC — soft accent for secondary glow/rims
+Color.appAccentDim          // #4ADE80 — dimmed accent
 
 // Accents
 Color.nebulaPurple          // #A78BFA — secondary accent
-Color.galaxyPink            // #F472B6 — destructive / active
-Color.auroraGreen           // #86EFAC — camera CTA highlight
+Color.galaxyPink            // #F472B6 — destructive / attention state
 Color.moonGold              // #FACC15 — lunar preset accent
 Color.meteorTeal            // #2DD4BF — meteor / timing accent
 Color.trailAmber            // #F59E0B — star-trail preset accent
 
+// Compatibility aliases
+Color.cosmicBlue            // Alias of appAccent
+Color.cameraAccent          // Alias of appAccent
+
 // Text
 Color.textPrimary           // #F8FAFC — same as starWhite
-Color.textSecondary         // #94A3B8 — supporting text
-Color.textTertiary          // #64748B — de-emphasized
+Color.textSecondary         // #CBD5E1 — supporting text
+Color.textTertiary          // #94A3B8 — de-emphasized
 ```
 
 ### Usage Rules
@@ -42,9 +77,12 @@ Color.textTertiary          // #64748B — de-emphasized
 - Use `textSecondary` for labels that support a primary value
 - Use `textTertiary` for de-emphasized metadata and icons
 - Use `galaxyPink` for stop/cancel/destructive actions
-- Use `cosmicBlue` for active state, progress, and primary CTAs
+- Use `appAccent` for active state, progress, selected rows, map pins, Liquid Glass tinting, and primary CTAs
+- Use `appAccentSoft` / `appAccentDim` only when a secondary shade of the same theme hue is needed
 - Use `nebulaPurple` for secondary highlights and gradients
-- Use `auroraGreen`, `moonGold`, `meteorTeal`, and `trailAmber` for camera mode accents only unless a new module explicitly adopts them
+- Use `moonGold`, `meteorTeal`, and `trailAmber` only for domain-specific mode/category accents
+- Do not use `cosmicBlue` or `cameraAccent` in new code; they exist only as compatibility aliases so the app keeps one accent system
+- Data visualization palettes such as Bortle map colors are centralized tokens, but they are not theme accents
 
 ## Typography
 
@@ -64,6 +102,19 @@ For numbers, always use rounded design + monospacedDigit:
 ```
 
 This prevents layout shifts as numbers change.
+
+### iOS Typography Rules
+
+- Use semantic text styles through the `Font.stakka*` tokens so Dynamic
+  Type works by default.
+- Use SF Pro / SF Rounded via SwiftUI system fonts; do not introduce
+  custom typefaces unless a product decision explicitly requires one.
+- Use `.monospacedDigit()` for changing numeric values, timers, exposure
+  values, frame counts, and progress counters.
+- Prefer `.foregroundStyle(.primary/.secondary)` for ordinary system
+  text when a view does not need Stakka-specific contrast tokens.
+- Keep labels short. If a value plus SF Symbol is clear, do not add a
+  redundant sentence label.
 
 ## Spacing
 
@@ -89,9 +140,16 @@ VStack(spacing: Spacing.md)
 HStack(spacing: Spacing.lg)
 ```
 
+### Touch Targets
+
+Interactive controls must meet the iOS 44 pt minimum touch target.
+Spacing should leave enough room for thumbs, especially near the bottom
+tab bar and camera capture controls.
+
 ## Corner Radii
 
-All radii use `.continuous` style. This is non-negotiable — it defines the 灵动美学 identity.
+All custom rounded shapes use the iOS continuous corner style. This keeps
+custom cards aligned with native iOS controls and Liquid Glass surfaces.
 
 ```swift
 CornerRadius.xs    // 6pt
@@ -128,6 +186,16 @@ AnimationPreset.quick         // easeOut 0.2s — instant feedback
 AnimationPreset.gentle        // easeInOut 0.5s — slow reveal
 ```
 
+### Motion Rules
+
+- Prefer native control animations and transitions.
+- Keep custom motion purposeful: state changes, capture progress,
+  picker open/close, and live feedback.
+- Avoid decorative motion that competes with camera preview, map tiles,
+  or stacked images.
+- Respect accessibility. If a future feature introduces large continuous
+  motion, it should react to Reduce Motion.
+
 ### When to Use Each
 
 | Preset        | Use For                                            |
@@ -155,6 +223,11 @@ withAnimation(AnimationPreset.springBouncy) {
 
 ## View Modifiers
 
+Use modifiers to centralize iOS-native behavior, not to hide one-off
+styling. New modifiers should either wrap a native SwiftUI capability,
+encode a repeated HIG-aligned pattern, or protect a product invariant
+such as continuous corner style.
+
 ### `.continuousCorners(_:)`
 
 Clips a view with continuous corner radii.
@@ -168,18 +241,16 @@ Clips a view with continuous corner radii.
 
 ### `.glassCard()`
 
-Frosted glass card effect. Used for control panels and information
-cards on non-camera surfaces (library, dark sky, permission primer,
-etc.).
+Compatibility helper for app-wide content cards. It now routes directly
+to `.liquidGlassCard(cornerRadius: CornerRadius.lg)`, so older library,
+dark-sky, and permission-primer surfaces adopt the native iOS 26 Liquid
+Glass treatment without keeping a separate material style.
 
 ```swift
 .glassCard()
 
 // Applies:
-// 1. spaceSurface 60% opacity fill
-// 2. starWhite 10% opacity 1pt border
-// 3. ultraThinMaterial background blur
-// All with continuous CornerRadius.lg
+// liquidGlassCard(cornerRadius: CornerRadius.lg)
 ```
 
 ### Liquid Glass — `.liquidGlass(...)` / `.liquidGlassCard(...)` / `.liquidGlassPill(...)`
@@ -191,9 +262,18 @@ iOS 26.0, so these helpers delegate directly to the native
 
 ```swift
 .liquidGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-.liquidGlassCard(cornerRadius: CornerRadius.xxl, tint: .cosmicBlue)
-.liquidGlassPill(tint: .auroraGreen, isInteractive: true)
+.liquidGlassCard(cornerRadius: CornerRadius.xxl, tint: .appAccent)
+.liquidGlassPill(tint: .appAccentSoft, isInteractive: true)
 ```
+
+Use native glass in this order:
+
+1. Native button styles: `.buttonStyle(.glass)` or
+   `.buttonStyle(.glassProminent)`.
+2. Pure system glass helpers: `.systemGlass*` for chrome that should look
+   fully native.
+3. Stakka glass helpers: `.liquidGlass*` for content surfaces that need
+   the app's subtle rim/highlight layer.
 
 Arguments:
 
@@ -205,9 +285,9 @@ Arguments:
 
 Apple's `Glass` type only exposes `.regular`, `.clear`, and `.identity`
 variants — there is no system-provided "prominent" surface. Visual
-prominence is achieved through `tint:` (e.g. an active control button
-taking on `cosmicBlue`, a capturing pill turning `galaxyPink`) or, for
-buttons specifically, by switching to `.buttonStyle(.glassProminent)`.
+prominence is achieved through `tint:` (e.g. a selected control or
+high-priority status surface) or, for buttons specifically, by switching
+to `.buttonStyle(.glassProminent)`.
 
 #### `GlassEffectContainer`
 
@@ -216,23 +296,24 @@ Adjacent Liquid Glass surfaces should be wrapped in a single
 **glass cannot sample other glass.** Without the container, nested or
 neighboring glass surfaces produce inconsistent rim highlights.
 
-The camera page wraps three groups:
+The camera page wraps these adjacent groups:
 
-1. The top bar's three pills (`PRO` / `LIVE` / settings).
-2. The bottom idle stack (mode selector card + drawer + inline wheel
+1. The top controls bar (parameter HUD + settings button).
+2. The bottom idle stack (mode selector rows + drawer + inline wheel
    picker, plus all the buttons within them).
-3. The settings panel + its preset rows, readout grid, and interval
-   stepper.
+3. The settings panel and its interval stepper.
 
-The camera page is the canonical Liquid Glass adopter — every card,
-pill, button, and panel on it routes through these helpers.
+All app-level content cards should route through `.glassCard()`,
+`.systemGlassCard(...)`, or `.liquidGlassCard(...)`; do not reintroduce
+`.ultraThinMaterial` card backgrounds for new UI.
 
 ### `.glow(color:radius:)`
 
-Static glow shadow. For icons and interactive elements at rest.
+Static glow shadow. Use sparingly for active/live state emphasis. Prefer
+native tint, symbol weight, or checkmarks before adding glow.
 
 ```swift
-.glow(color: .cosmicBlue, radius: 8)
+.glow(color: .appAccent, radius: 8)
 
 // Applies two shadows:
 // shadow(color: 60% opacity, radius: r)
@@ -241,58 +322,36 @@ Static glow shadow. For icons and interactive elements at rest.
 
 ### `.breathingGlow(color:radius:)`
 
-Animated glow that pulses with a 2-second cycle. For "live" state indicators.
+Animated glow that pulses with a 2-second cycle. Use only for live state
+indicators where motion communicates ongoing work.
 
 ```swift
-.breathingGlow(color: .cosmicBlue, radius: 4)
+.breathingGlow(color: .appAccent, radius: 4)
 
 // Uses easeInOut(duration: 2).repeatForever(autoreverses: true)
 // Opacity oscillates 40%→70% on inner shadow, 20%→40% on outer
 ```
 
-Use `.breathingGlow` for:
-- Active capture progress indicators
-- "Live" stacking numbers
-- Completion confirmation icons
-
-Use `.glow` for:
-- Static accent icons
-- Navigation indicators
+Use `.breathingGlow` for active capture or live stacking status only.
+Use `.glow` for rare static accent icons. Do not use glow as a general
+card or button treatment.
 
 ## Color Initialization
 
 `Color` extension supports hex string initialization:
 
 ```swift
-Color(hex: "#3B82F6")
-Color(hex: "#3B82F6CC")  // with alpha
+Color(hex: "#22C55E")
+Color(hex: "#22C55ECC")  // with alpha
 Color(hex: "F6F")        // 3-digit shorthand
 ```
 
-## GlassCardStyle Detail
-
-The glass card effect uses two separate `.background()` modifiers for proper layering:
-
-```swift
-// Outer: colored tinted surface + border
-.background(
-    RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-        .fill(Color.spaceSurface.opacity(0.6))
-        .overlay(border stroke)
-)
-// Inner: material blur
-.background(
-    RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-        .fill(.ultraThinMaterial)
-)
-```
-
-Order matters — the colored tint sits on top of the blur.
-
 ## LiquidGlassModifier Detail
 
-`LiquidGlassModifier` is a thin pass-through to the iOS 26
-`glassEffect(_:in:)` API:
+`LiquidGlassModifier` is centered on the iOS 26 `glassEffect(_:in:)`
+API. Stakka adds only a very light optical rim and top-left highlight so
+the surface remains legible over black camera preview and saturated map
+tiles while the core refraction remains system-provided:
 
 ```swift
 struct LiquidGlassModifier<S: Shape>: ViewModifier {
@@ -301,7 +360,10 @@ struct LiquidGlassModifier<S: Shape>: ViewModifier {
     let isInteractive: Bool
 
     func body(content: Content) -> some View {
-        content.glassEffect(resolvedGlass, in: shape)
+        content
+            .background(shape.fill(lowOpacitySurface))
+            .glassEffect(resolvedGlass, in: shape)
+            .overlay(specularRim)
     }
 
     private var resolvedGlass: Glass {
@@ -313,9 +375,9 @@ struct LiquidGlassModifier<S: Shape>: ViewModifier {
 }
 ```
 
-All visual fidelity (depth, refraction, specular response, dynamic
-adaptation to underlying content, animated morphing during state
-transitions) is delegated to the system. The helpers exist mainly to:
+Depth, refraction, dynamic adaptation to underlying content, and glass
+interaction behavior are delegated to the system. The helpers exist
+mainly to:
 
 1. Centralize the call site so future API tweaks land in one place.
 2. Provide convenience wrappers for the most common shapes
@@ -341,19 +403,36 @@ When adding new tokens:
 
 Do not hardcode values in views. Every magic number is a future maintenance burden.
 
+Before adding a token or modifier, check whether SwiftUI already has a
+native control, style, or environment value for the same job. If a native
+API exists, document why Stakka still needs a wrapper.
+
 ## Design Decisions
+
+### Why iOS-native first?
+
+Users already understand iOS navigation, search, sheets, buttons,
+pickers, lists, and tab bars. Matching those patterns lowers cognitive
+load and lets astrophotography content stay primary.
 
 ### Why continuous corners?
 
-iOS uses continuous (quintic) corner curves for its own UI (Dynamic Island, Springboard, etc.). Using `.continuous` makes the app feel native rather than designed.
+iOS uses continuous corner curves across system UI. Using `.continuous`
+keeps custom shapes visually compatible with native controls and Liquid
+Glass.
 
 ### Why breathing glow on live elements?
 
-Stars twinkle. Breathing glow on active elements reinforces the astronomy metaphor while providing clear "live" state indication without color changes.
+Live capture and live stacking need a subtle ongoing-state signal.
+Breathing glow is limited to those moments so motion remains useful
+rather than decorative.
 
 ### Why wheel pickers over sliders?
 
-Sliders require precise thumb placement. Wheel pickers use iOS's familiar scroll momentum (same as Date Picker, Time Zone selector). For photography parameters (exposure time, ISO) with specific meaningful values, a picker better matches mental models than a continuous slider.
+Sliders require precise thumb placement. Wheel pickers use familiar iOS
+scroll momentum. For photography parameters with specific meaningful
+values, a snapping picker better matches the task than a continuous
+slider.
 
 ### Why monospaced digits?
 

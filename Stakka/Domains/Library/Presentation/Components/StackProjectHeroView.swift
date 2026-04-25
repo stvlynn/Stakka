@@ -62,11 +62,10 @@ struct StackProjectHeroView: View {
                 Text(result.mode.title)
                     .font(.stakkaSmall)
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.cosmicBlue)
+                    .foregroundStyle(Color.appAccent)
                     .padding(.horizontal, Spacing.sm)
                     .padding(.vertical, 6)
-                    .background(Color.cosmicBlue.opacity(0.14))
-                    .continuousCorners(CornerRadius.sm)
+                    .liquidGlassPill(tint: .appAccent)
             }
         }
     }
@@ -94,14 +93,14 @@ struct StackProjectHeroView: View {
                     RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
                         .stroke(
                             LinearGradient(
-                                colors: [.cosmicBlue, .nebulaPurple],
+                                colors: [.appAccent, .nebulaPurple],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
                             lineWidth: 1.5
                         )
                 )
-                .shadow(color: .cosmicBlue.opacity(0.25), radius: 18)
+                .shadow(color: .appAccent.opacity(0.25), radius: 18)
         } else {
             placeholderMedia
         }
@@ -109,17 +108,13 @@ struct StackProjectHeroView: View {
 
     private var placeholderMedia: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.spaceSurfaceElevated.opacity(0.9), Color.spaceSurface.opacity(0.6)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.liquidGlassSurface
 
             VStack(spacing: Spacing.sm) {
                 Image(systemName: "sparkles.rectangle.stack.fill")
                     .font(.system(size: 36, weight: .semibold))
-                    .foregroundStyle(Color.cosmicBlue)
-                    .breathingGlow(color: .cosmicBlue, radius: 6)
+                    .foregroundStyle(Color.appAccent)
+                    .breathingGlow(color: .appAccent, radius: 6)
                 Text(L10n.Library.resultPlaceholder)
                     .font(.stakkaCaption)
                     .fontWeight(.semibold)
@@ -134,11 +129,7 @@ struct StackProjectHeroView: View {
             .padding(Spacing.lg)
         }
         .frame(height: 200)
-        .continuousCorners(CornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: CornerRadius.lg, style: .continuous)
-                .stroke(Color.starWhite.opacity(0.08), lineWidth: 1)
-        )
+        .liquidGlassCard(cornerRadius: CornerRadius.lg)
     }
 
     // MARK: - Frame count row (no-result state)
@@ -152,7 +143,7 @@ struct StackProjectHeroView: View {
                 VStack(spacing: 4) {
                     Image(systemName: kind.symbolName)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.cosmicBlue)
+                        .foregroundStyle(Color.appAccent)
                     Text("\(project.frames(of: kind).filter(\.isEnabled).count)")
                         .font(.stakkaCaption)
                         .fontWeight(.semibold)
@@ -161,8 +152,7 @@ struct StackProjectHeroView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.xs)
-                .background(Color.spaceSurface.opacity(0.55))
-                .continuousCorners(CornerRadius.sm)
+                .liquidGlassCard(cornerRadius: CornerRadius.sm)
                 .accessibilityLabel("\(kind.title): \(project.frames(of: kind).filter(\.isEnabled).count)")
             }
         }
@@ -176,23 +166,16 @@ struct StackProjectHeroView: View {
                 actionLabel(symbol: "square.and.arrow.down.fill", title: L10n.Common.save)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .fill(Color.cosmicBlue)
-                    )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glassProminent)
+            .tint(.appAccent)
 
             Button(action: onExportTIFF) {
                 actionLabel(symbol: "square.and.arrow.up", title: L10n.Library.exportTIFF)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                            .stroke(Color.starWhite.opacity(0.2), lineWidth: 1)
-                    )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
         }
     }
 

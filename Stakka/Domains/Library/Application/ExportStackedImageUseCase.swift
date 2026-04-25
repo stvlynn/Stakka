@@ -1,9 +1,9 @@
 import UIKit
 
-struct ExportStackedImageUseCase {
-    private let repository: PhotoLibraryRepository
+struct ExportStackedImageUseCase: Sendable {
+    private let repository: any PhotoLibraryRepository
 
-    init(repository: PhotoLibraryRepository) {
+    init(repository: any PhotoLibraryRepository) {
         self.repository = repository
     }
 

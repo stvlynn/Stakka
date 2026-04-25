@@ -8,28 +8,52 @@ Stakka is an iOS astrophotography application designed for stargazing enthusiast
 2. **Multi-exposure capture** — Automated stacking photography
 3. **Library stacking** — Process existing photos
 
-The app follows 灵动美学 (Dynamic Island aesthetic) — minimal text, continuous curves, breathing animations, and icon-first interactions.
+The app follows iOS-native design first. Stakka's visual identity is a
+thin astronomy-themed layer on top of Apple's Human Interface Guidelines:
+clarity, deference, depth, system typography, SF Symbols, native controls,
+and iOS 26 Liquid Glass surfaces.
 
 ## Design Philosophy
 
-### 1. Minimal Text, Maximum Clarity
+### 1. Clarity Before Decoration
 
 Users are astronomy enthusiasts, not beginners. The UI assumes familiarity with photography concepts (aperture, shutter speed, ISO).
+Labels should be concise, values should be easy to scan, and symbols
+should come from SF Symbols unless a domain-specific asset is required.
 
 **Good:**
+
 ```
 [1.5]  [●]  [10]
  ⏱️     ✨   📷
 ```
 
 **Bad:**
+
 ```
 Exposure Time: 1.5 seconds
 Capture Button
 Number of Shots: 10
 ```
 
-### 2. Continuous Corners Everywhere
+### 2. Deference To Content
+
+Astrophotography content, camera preview, stacked results, and dark-sky
+map tiles are the primary surfaces. Chrome should support those surfaces
+without competing with them:
+
+- prefer native navigation, tab, search, list, sheet, and button patterns
+- avoid nested cards and heavy custom backgrounds
+- use text only when icons and values are not enough
+- keep the tab bar stable for global navigation
+
+### 3. Native Depth
+
+iOS 26 Liquid Glass is the default depth language for cards, pills,
+buttons, and floating controls. Use native `glassEffect`, glass button
+styles, and `GlassEffectContainer` through the design-system helpers.
+
+### 4. Continuous Corners Where Custom Shapes Are Needed
 
 All UI elements use continuous corner radii (iOS 13+ style) for visual consistency.
 
@@ -42,17 +66,19 @@ All UI elements use continuous corner radii (iOS 13+ style) for visual consisten
 .clipShape(RoundedRectangle(cornerRadius: 16))
 ```
 
-### 3. Wheel Pickers Over Sliders
+### 5. Wheel Pickers Over Sliders
 
 Camera controls use iOS-native wheel pickers (like Clock app) instead of sliders. This provides:
+
 - Precise value selection
 - Familiar iOS interaction pattern
 - Better accessibility
 - Cleaner visual hierarchy
 
-### 4. Async/Await Throughout
+### 6. Async/Await Throughout
 
 All long-running operations (capture, stacking, file I/O) use Swift concurrency:
+
 - No completion handlers
 - Structured concurrency with Task
 - Actor isolation for image processing
@@ -77,16 +103,19 @@ All long-running operations (capture, stacking, file I/O) use Swift concurrency:
 ```
 
 **App Layer**
+
 - Tab navigation
 - Dependency composition via `AppContainer`
 - Dark mode enforcement
 
 **Domain Layer**
+
 - Business capabilities are grouped by domain: `DarkSky`, `Capture`, `Stacking`, `Library`, `Session`
 - Each domain can contain `Presentation`, `Application`, `Domain`, and `Infrastructure`
 - Shared business capabilities (for example stacking) are reused through use cases and protocols instead of direct feature-to-feature calls
 
 **Platform Layer**
+
 - Design system tokens and shared view modifiers
 - Localization wrappers and shared formatters
 - Shared lightweight utility types
@@ -105,19 +134,23 @@ Domains/{Domain}/
 ```
 
 Presentation:
+
 - `View` and `ViewModel`
 - UI state and transitions
 - No direct platform framework setup beyond rendering
 
 Application:
+
 - Coordinates domain operations
 - Exposes task-oriented entry points such as `RunStackingUseCase`
 
 Domain:
+
 - Stable business models and protocols
 - Avoids view concerns
 
 Infrastructure:
+
 - AVFoundation, CoreImage, PhotoKit, CoreLocation, MapKit integration
 - Concrete implementations for domain protocols
 
@@ -155,6 +188,7 @@ Stakka/
 ### 1. Camera Capture System
 
 **Components:**
+
 - `CameraViewModel` — AVFoundation session management
 - `CameraView` — Preview layer + controls overlay
 - `CameraControlsView` — Orchestrates pickers and menu
@@ -162,6 +196,7 @@ Stakka/
 - `WheelPickerView` — Generic wheel picker overlay
 
 **Flow:**
+
 1. User taps exposure/shots button → Wheel picker appears
 2. User drags menu up → Advanced controls expand (aperture, shutter, zoom, mode)
 3. User taps capture → Sequential capture begins
@@ -172,6 +207,7 @@ Stakka/
 8. The live-built `StackingProject` is saved as the recent library project
 
 **Key Constraints:**
+
 - Camera permission required (AVCaptureDevice.requestAccess)
 - Capture session runs on background queue
 - UI updates on main actor
@@ -183,6 +219,7 @@ Stakka/
 ### 2. Image Stacking Algorithm
 
 **Implementation:**
+
 - Actor-isolated for thread safety
 - Project-based workflow: analyze → register → stack
 - Frame model includes `Light`, `Dark`, `Flat`, `Dark Flat`, `Bias`
@@ -194,6 +231,7 @@ Stakka/
 - Async/await for non-blocking execution
 
 **Performance:**
+
 - Imported frames are normalized and downscaled before processing
 - Linear RGBA buffers are used for calibration and combine
 - Returns `UIImage` for in-app preview and photo-library save
@@ -229,19 +267,22 @@ This enables:
 ### 3. Design System
 
 **Tokens:**
-- Colors: Space theme (deep blacks, cosmic blues, nebula purples)
+
+- Colors: Space theme with a single app accent (`appAccent`) plus limited domain/data palettes
 - Typography: SF Pro with rounded variant for numbers
 - Spacing: 4/8/16/24/32/48pt scale
 - Corner radii: 6/10/16/20/28/36pt (continuous style)
 - Animations: Spring/smooth/quick presets
 
 **Key Modifiers:**
+
 - `.continuousCorners(_:)` — Continuous corner radii
 - `.glassCard()` — Frosted glass effect
 - `.glow(color:radius:)` — Static glow
 - `.breathingGlow(color:radius:)` — Animated glow
 
 **Animation Presets:**
+
 ```swift
 AnimationPreset.spring        // 0.4s, 75% damping
 AnimationPreset.springBouncy  // 0.5s, 65% damping
@@ -264,12 +305,14 @@ This keeps primary screens free of raw localization keys and prevents mixed-lang
 ### 4. Light Pollution Map
 
 **Components:**
+
 - MapKit integration
 - Location services
 - Pollution level classification (9 levels)
 - Interactive markers
 
 **Data Source:**
+
 - Mock data currently
 - Future: Light Pollution Map API integration
 
@@ -324,6 +367,7 @@ No global state. No singletons. Each feature owns its state.
 ### Current: Zero Dependencies
 
 Stakka uses only iOS system frameworks:
+
 - SwiftUI
 - AVFoundation
 - MapKit
@@ -334,6 +378,7 @@ Stakka uses only iOS system frameworks:
 ### Future Considerations
 
 If adding dependencies:
+
 - Use Swift Package Manager
 - Prefer Apple frameworks over third-party
 - Justify each dependency in PR description
@@ -363,6 +408,7 @@ xcodegen generate
 ```
 
 Benefits:
+
 - No merge conflicts in .xcodeproj
 - Declarative project structure
 - Easy to review changes
@@ -464,3 +510,4 @@ UI text is minimal and primarily Chinese.
 - [Swift Concurrency](https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html)
 - [AVFoundation Programming Guide](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/AVFoundationPG/)
 - [Light Pollution Map](https://github.com/cgettings/Light-Pollution-Map)
+

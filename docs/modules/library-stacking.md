@@ -38,7 +38,19 @@ The module exposes a DSS-style sequence:
 6. Run `堆栈`
 7. Save the final image or export a TIFF file
 
-The gallery creation wizard combines the first three steps for new projects. Its final action imports the selected frames, opens the created project, and starts the registration + stacking operation immediately.
+The gallery creation wizard combines the first three steps for new
+projects. Its final action imports the selected frames, opens the
+created project, and starts the registration + stacking operation
+immediately.
+
+The wizard uses native iOS 26 presentation patterns:
+
+- step progress renders through `ProgressView`
+- mode selection is a grouped row list with a checkmark, not filled
+custom cards
+- cancellation, import, back, next, and start actions use native glass
+button styles
+- active/primary state uses the app-wide `appAccent` token
 
 The current iOS implementation supports Photos imports and file-based image imports. Each imported frame is normalized and downscaled for on-device processing. Projects are stored in a local project catalog and one project is marked as the current recent project.
 
@@ -124,3 +136,4 @@ Stacking is blocked while any enabled `Light` frame still requires comet review.
 - Add FITS import and RAW decode
 - Export final TIFF and calibrated/registered intermediates
 - Add batch project execution
+

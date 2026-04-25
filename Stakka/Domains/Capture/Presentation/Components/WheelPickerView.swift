@@ -2,9 +2,9 @@ import SwiftUI
 
 // MARK: - Horizontal Wheel Picker
 
-/// A compact horizontal wheel that snaps the closest item to its center
-/// indicator. Designed to live directly above the controls drawer so the
-/// camera preview is never occluded by a modal sheet.
+/// A compact, cardless horizontal wheel that snaps the closest item to its
+/// center indicator. It follows SwiftUI's native scroll-target pattern:
+/// `LazyHStack.scrollTargetLayout()` + `.viewAligned(anchor: .center)`.
 ///
 /// Item type only needs to conform to `Hashable`; the value itself is used
 /// as the SwiftUI identity for `scrollPosition` snapping.
@@ -29,9 +29,7 @@ struct HorizontalWheelPicker<Item: Hashable>: View {
             wheel
                 .frame(height: trackHeight)
         }
-        .padding(.vertical, Spacing.sm)
-        .padding(.horizontal, Spacing.md)
-        .liquidGlassCard(cornerRadius: CornerRadius.lg)
+        .padding(.vertical, Spacing.xs)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(title)
         .accessibilityValue(valueText(selection))
@@ -74,11 +72,12 @@ struct HorizontalWheelPicker<Item: Hashable>: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color.textTertiary)
-                    .frame(width: 24, height: 24)
-                    .liquidGlass(in: Circle(), isInteractive: true)
+                    .frame(width: 32, height: 32)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(L10n.Accessibility.dismissPicker)
         }
+        .padding(.horizontal, Spacing.md)
     }
 
     private var wheel: some View {
@@ -89,9 +88,8 @@ struct HorizontalWheelPicker<Item: Hashable>: View {
                 // Center selection indicator: a thin vertical bar that
                 // anchors the eye to the snapped value.
                 RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                    .fill(Color.cosmicBlue)
+                    .fill(Color.appAccent)
                     .frame(width: 2, height: 26)
-                    .glow(color: .cosmicBlue, radius: 4)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 0) {
@@ -104,7 +102,7 @@ struct HorizontalWheelPicker<Item: Hashable>: View {
                     .scrollTargetLayout()
                 }
                 .scrollPosition(id: $scrollPositionID, anchor: .center)
-                .scrollTargetBehavior(.viewAligned)
+                .scrollTargetBehavior(.viewAligned(anchor: .center))
                 .contentMargins(.horizontal, sideInset, for: .scrollContent)
                 .mask(
                     LinearGradient(

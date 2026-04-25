@@ -77,14 +77,14 @@ make run
 Default simulator:
 
 ```bash
-SIMULATOR ?= iPhone 16 Pro
+SIMULATOR ?= iPhone 17 Pro
 ```
 
 Override it per command:
 
 ```bash
-make run SIMULATOR='iPhone 15 Pro'
-make run SIMULATOR='iPhone 16 Pro Max'
+make run SIMULATOR='iPhone 17'
+make run SIMULATOR='iPhone 17 Pro Max'
 ```
 
 To see available devices:
@@ -96,7 +96,7 @@ make sim-list
 For persistent local defaults, create `Makefile.local`:
 
 ```makefile
-SIMULATOR := iPhone 16 Pro Max
+SIMULATOR := iPhone 17 Pro Max
 ```
 
 `Makefile.local` is loaded automatically and should remain local to the
@@ -213,7 +213,7 @@ Before merging behavior changes:
   and close correctly
 - Expanded drawer controls switch the same inline wheel between
   aperture, shutter, zoom, and shooting mode
-- Starting a capture sequence collapses the top bar, the mode
+- Starting a capture sequence collapses the top controls bar, the mode
   selector, and the controls drawer; only a floating capture/stop
   button remains over the preview
 - The capture button shows the stop square and animated progress ring

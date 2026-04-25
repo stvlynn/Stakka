@@ -56,8 +56,8 @@ struct StackProjectBrowserView: View {
                 onCreate()
                 dismiss()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.cosmicBlue)
+            .buttonStyle(.glassProminent)
+            .tint(.appAccent)
         }
         .padding(Spacing.xl)
     }
@@ -80,11 +80,10 @@ struct StackProjectBrowserView: View {
                 if currentProjectID == summary.id {
                     Text(L10n.Common.current)
                         .font(.stakkaSmall)
-                        .foregroundStyle(Color.cosmicBlue)
+                        .foregroundStyle(Color.appAccent)
                         .padding(.horizontal, Spacing.sm)
                         .padding(.vertical, 6)
-                        .background(Color.cosmicBlue.opacity(0.12))
-                        .continuousCorners(CornerRadius.md)
+                        .liquidGlassPill(tint: .appAccent)
                 }
             }
 
@@ -101,19 +100,19 @@ struct StackProjectBrowserView: View {
                     onOpen(summary.id)
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.cosmicBlue)
+                .buttonStyle(.glassProminent)
+                .tint(.appAccent)
 
                 Button(L10n.Common.duplicate) {
                     onDuplicate(summary.id)
                     dismiss()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
 
                 Button(L10n.Common.delete) {
                     onDelete(summary.id)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .tint(.galaxyPink)
             }
         }
@@ -131,7 +130,6 @@ struct StackProjectBrowserView: View {
         .foregroundStyle(Color.textSecondary)
         .padding(.horizontal, Spacing.sm)
         .padding(.vertical, 6)
-        .background(Color.spaceSurface.opacity(0.55))
-        .continuousCorners(CornerRadius.md)
+        .liquidGlassPill()
     }
 }

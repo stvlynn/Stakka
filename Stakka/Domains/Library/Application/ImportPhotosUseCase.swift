@@ -1,10 +1,10 @@
 import PhotosUI
 import SwiftUI
 
-struct ImportPhotosUseCase {
-    private let repository: PhotoLibraryRepository
+struct ImportPhotosUseCase: Sendable {
+    private let repository: any PhotoLibraryRepository
 
-    init(repository: PhotoLibraryRepository) {
+    init(repository: any PhotoLibraryRepository) {
         self.repository = repository
     }
 

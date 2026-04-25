@@ -22,6 +22,7 @@ This documentation is written for maintainers working on the current codebase.
 - [guides/library-workflow.md](./guides/library-workflow.md) — how library projects move from import to export
 - [guides/comet-mode.md](./guides/comet-mode.md) — comet modes, annotation flow, implementation details
 - [guides/capture-handoff.md](./guides/capture-handoff.md) — how camera capture writes into stacking projects
+- [guides/ios26-native-ui-refresh.md](./guides/ios26-native-ui-refresh.md) — iOS 26 Liquid Glass migration, native UI refresh, theme color consolidation, and validation notes
 
 ### Development
 

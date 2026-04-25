@@ -406,3 +406,4 @@ This design is successful when:
 - the main screens no longer contain hardcoded user-facing literals
 - permission strings are localized
 - a reusable `swift-i18n` skill exists and validates cleanly
+

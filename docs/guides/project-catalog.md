@@ -97,3 +97,4 @@ This is what lets camera capture handoff update the library tab without rebuildi
 - There is no explicit project archive/favorite state yet
 - There is no batch queue state stored per project yet
 - Frame caches are rasterized PNG/JPEG snapshots, not source RAW/FITS payloads
+

@@ -103,7 +103,6 @@ private struct AstroModeSelectorView: View {
         .padding(.top, Spacing.md)
         .padding(.bottom, Spacing.sm)
         .frame(maxWidth: .infinity)
-        .liquidGlassCard(cornerRadius: CornerRadius.xxl)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.Camera.modeSelector)
     }
@@ -117,7 +116,7 @@ private struct AstroModeSelectorView: View {
                 .foregroundStyle(Color.starWhite)
                 .padding(.horizontal, Spacing.xl)
                 .frame(height: 40)
-                .liquidGlassPill()
+                .systemGlassPill()
 
             Spacer()
         }
@@ -136,58 +135,33 @@ private struct AstroModeCardView: View {
                 HStack {
                     Image(systemName: mode.systemImage)
                         .font(.system(size: isSelected ? 24 : 18, weight: .bold))
-                        .foregroundStyle(mode.cardForeground)
+                        .foregroundStyle(isSelected ? Color.appAccent : Color.textSecondary)
                         .accessibilityHidden(true)
 
                     Spacer()
-
-                    if isSelected {
-                        Circle()
-                            .fill(mode.cardForeground)
-                            .frame(width: 8, height: 8)
-                    }
                 }
 
                 Spacer(minLength: 0)
 
                 Text(mode.localizedTitle)
                     .font(isSelected ? .stakkaHeadline : .stakkaCaption)
-                    .foregroundStyle(mode.cardForeground)
+                    .foregroundStyle(isSelected ? Color.starWhite : Color.textSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.68)
 
                 Text(mode.presetCode)
                     .font(.system(size: isSelected ? 26 : 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(mode.cardForeground.opacity(0.92))
+                    .foregroundStyle(isSelected ? Color.appAccent : Color.textTertiary)
                     .monospacedDigit()
-
-                HStack(spacing: 5) {
-                    ForEach(0..<5, id: \.self) { index in
-                        Capsule(style: .continuous)
-                            .fill(mode.cardForeground.opacity(index < mode.intensityDots ? 0.95 : 0.22))
-                            .frame(width: 10, height: 7)
-                    }
-                }
             }
             .padding(Spacing.sm)
             .frame(width: isSelected ? 104 : 82, height: isSelected ? 122 : 100)
-            .background(
-                LinearGradient(
-                    colors: [
-                        mode.accent,
-                        mode.secondaryAccent.opacity(mode == .moon ? 0.86 : 0.72)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+            .systemGlassCard(
+                cornerRadius: CornerRadius.lg,
+                tint: isSelected ? Color.appAccent : nil,
+                isInteractive: true
             )
-            .continuousCorners(CornerRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                    .stroke(isSelected ? Color.starWhite.opacity(0.85) : Color.starWhite.opacity(0.08), lineWidth: isSelected ? 2 : 1)
-            )
-            .shadow(color: isSelected ? mode.accent.opacity(0.38) : .clear, radius: 10, y: 4)
-            .opacity(isSelected ? 1 : 0.42)
+            .opacity(isSelected ? 1 : 0.68)
             .scaleEffect(isSelected ? 1 : 0.94)
             .animation(AnimationPreset.spring, value: isSelected)
         }
@@ -199,22 +173,3 @@ private struct AstroModeCardView: View {
     }
 }
 
-private extension AstroCaptureMode {
-    var cardForeground: Color {
-        switch self {
-        case .moon, .starTrails:
-            return .spaceBackground
-        case .milkyWay, .meteor:
-            return .starWhite
-        }
-    }
-
-    var intensityDots: Int {
-        switch self {
-        case .milkyWay: return 4
-        case .starTrails: return 5
-        case .moon: return 2
-        case .meteor: return 3
-        }
-    }
-}

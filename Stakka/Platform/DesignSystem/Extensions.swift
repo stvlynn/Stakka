@@ -15,9 +15,9 @@ extension Double {
 }
 
 extension ISO8601DateFormatter {
-    static let fileSafe: ISO8601DateFormatter = {
+    static var fileSafe: ISO8601DateFormatter {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
         return formatter
-    }()
+    }
 }

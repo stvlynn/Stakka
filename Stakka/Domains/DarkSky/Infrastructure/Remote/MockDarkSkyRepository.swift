@@ -1,6 +1,6 @@
 import CoreLocation
 
-struct MockDarkSkyRepository: DarkSkyRepository {
+struct MockDarkSkyRepository: DarkSkyRepository, Sendable {
     func pollution(at coordinate: CLLocationCoordinate2D) async throws -> LightPollution {
         let normalizedLevel = abs(coordinate.latitude + coordinate.longitude).truncatingRemainder(dividingBy: 2.4)
         let bortleLevel: BortleLevel

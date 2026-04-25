@@ -38,7 +38,6 @@ struct GalleryView: View {
             }
             .navigationTitle(L10n.Gallery.title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .task {
                 await viewModel.loadRecentProjectIfNeeded()
@@ -124,7 +123,7 @@ struct GalleryView: View {
         } label: {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 ZStack {
-                    Color.spaceSurface
+                    Color.liquidGlassSurface
                         .aspectRatio(1, contentMode: .fit)
 
                     if let thumbnail = viewModel.thumbnailCache[summary.id] {
@@ -161,6 +160,8 @@ struct GalleryView: View {
                 }
                 .padding(.horizontal, Spacing.xs)
             }
+            .padding(Spacing.sm)
+            .liquidGlassCard(cornerRadius: CornerRadius.lg, isInteractive: true)
         }
         .buttonStyle(.plain)
     }
@@ -173,12 +174,9 @@ struct GalleryView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(Color.starWhite)
                 .frame(width: 56, height: 56)
-                .background(
-                    Circle()
-                        .fill(Color.cosmicBlue)
-                        .shadow(color: .cosmicBlue.opacity(0.5), radius: 12, x: 0, y: 4)
-                )
+                .liquidGlass(in: Circle(), tint: .appAccent, isInteractive: true)
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(L10n.Gallery.createProject)
         .accessibilityIdentifier("gallery.fab.create")
     }

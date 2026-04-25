@@ -17,8 +17,8 @@ enum PermissionKind {
 
     fileprivate var glowColor: Color {
         switch self {
-        case .location: return .cosmicBlue
-        case .camera: return .cosmicBlue
+        case .location: return .appAccent
+        case .camera: return .appAccent
         case .photos: return .nebulaPurple
         }
     }
@@ -103,12 +103,9 @@ struct PermissionPrimerView: View {
                         .foregroundStyle(Color.starWhite)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: Spacing.touchTarget)
-                        .background(
-                            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                                .fill(Color.cosmicBlue)
-                        )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glassProminent)
+                .tint(kind.glowColor)
 
                 if let onDismiss {
                     Button(action: onDismiss) {
@@ -118,7 +115,7 @@ struct PermissionPrimerView: View {
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: Spacing.touchTarget)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.glass)
                 }
             }
             .padding(.top, Spacing.xs)

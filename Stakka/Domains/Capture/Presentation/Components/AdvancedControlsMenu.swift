@@ -111,7 +111,7 @@ struct AdvancedControlsMenu: View {
             mainControls
         }
         .padding(Spacing.lg)
-        .liquidGlassCard(cornerRadius: CornerRadius.xxl)
+        .systemGlassCard(cornerRadius: CornerRadius.lg)
         .gesture(
             DragGesture()
                 .onEnded { value in
@@ -130,7 +130,7 @@ struct AdvancedControlsMenu: View {
 
     private var dragIndicator: some View {
         RoundedRectangle(cornerRadius: 3, style: .continuous)
-            .fill(Color.textTertiary.opacity(0.6))
+            .fill(Color.starWhite.opacity(0.38))
             .frame(width: 40, height: 5)
             .padding(.bottom, Spacing.xs)
     }
@@ -178,13 +178,13 @@ struct AdvancedControlsMenu: View {
             }
 
             Divider()
-                .overlay(Color.spaceSurfaceElevated)
+                .overlay(Color.starWhite.opacity(0.10))
                 .padding(.vertical, Spacing.xs)
         }
     }
 
     private var mainControls: some View {
-        HStack(spacing: Spacing.xl) {
+        HStack(alignment: .center, spacing: Spacing.lg) {
             controlButton(
                 icon: "timer",
                 value: L10nFormat.exposure(viewModel.exposureTime),
@@ -192,8 +192,10 @@ struct AdvancedControlsMenu: View {
             ) {
                 toggle(.exposure)
             }
+            .frame(maxWidth: .infinity)
 
             CameraCaptureButton(viewModel: viewModel)
+                .frame(width: 92)
 
             controlButton(
                 icon: "photo.stack",
@@ -202,6 +204,7 @@ struct AdvancedControlsMenu: View {
             ) {
                 toggle(.shots)
             }
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -217,24 +220,23 @@ struct AdvancedControlsMenu: View {
         Button(action: action) {
             VStack(spacing: Spacing.xs) {
                 Text(value)
-                    .font(.stakkaNumericLarge)
-                    .foregroundStyle(isActive ? Color.cosmicBlue : Color.starWhite)
+                    .font(.system(size: 30, weight: .semibold, design: .rounded))
+                    .foregroundStyle(isActive ? Color.appAccent : Color.starWhite)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
 
                 Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundStyle(isActive ? Color.cosmicBlue : Color.textTertiary)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(isActive ? Color.appAccent : Color.textTertiary)
             }
-            .frame(width: 70, height: Spacing.touchTarget)
-            .liquidGlassCard(
-                cornerRadius: CornerRadius.sm,
-                tint: isActive ? Color.cosmicBlue : nil,
-                isInteractive: true
-            )
-            .contentShape(Rectangle())
+            .frame(width: 88, height: 64)
+            .contentShape(Capsule(style: .continuous))
             .scaleEffect(isActive ? 1.05 : 1.0)
             .animation(AnimationPreset.spring, value: isActive)
         }
         .buttonStyle(.plain)
+        .accessibilityValue(value)
     }
 
     private func advancedControlButton(
@@ -248,7 +250,7 @@ struct AdvancedControlsMenu: View {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundStyle(isActive ? Color.cosmicBlue : Color.cosmicBlueDim)
+                    .foregroundStyle(isActive ? Color.appAccent : Color.textSecondary)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -264,13 +266,13 @@ struct AdvancedControlsMenu: View {
 
                 Image(systemName: isActive ? "chevron.down" : "chevron.right")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(isActive ? Color.cosmicBlue : Color.textMuted)
+                    .foregroundStyle(isActive ? Color.appAccent : Color.textMuted)
             }
             .padding(.horizontal, Spacing.md)
             .frame(maxWidth: .infinity, minHeight: Spacing.touchTarget)
-            .liquidGlassCard(
-                cornerRadius: CornerRadius.md,
-                tint: isActive ? Color.cosmicBlue : nil,
+            .systemGlassCard(
+                cornerRadius: CornerRadius.lg,
+                tint: isActive ? Color.appAccent : nil,
                 isInteractive: true
             )
             .animation(AnimationPreset.spring, value: isActive)
