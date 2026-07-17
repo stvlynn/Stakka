@@ -13,6 +13,15 @@ struct ProjectCreationWizardView: View {
     @State private var darkFlatItems: [PhotosPickerItem] = []
     @State private var biasItems: [PhotosPickerItem] = []
     @State private var activeExplainer: StackFrameKind?
+    /// True while `onCreate` is running. Disables the Start button so a
+    /// double-tap can't create two projects, and swaps in a spinner.
+    @State private var isCreating = false
+    /// Drives the "discard project?" confirmation when the user cancels
+    /// after already importing photos.
+    @State private var isConfirmingDiscard = false
+    /// Toggled when a forward swipe is bounced back by a validation gate, so
+    /// the failed attempt is felt (error haptic), not just seen.
+    @State private var stepGateBounce = false
     /// Tracks whether any thumbnail is currently being dragged. When true the
     /// wizard reveals a bottom drop-to-delete zone in place of the nav
     /// buttons.
@@ -46,6 +55,24 @@ struct ProjectCreationWizardView: View {
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .animation(AnimationPreset.smooth, value: currentStep)
+                    // The page style lets users swipe as well as tap "Next".
+                    // Swiping must obey the same validation gate as the
+                    // button: bounce back (with an error haptic) when the
+                    // Light step doesn't have its 2 required frames yet.
+                    .onChange(of: currentStep) { oldValue, newValue in
+                        guard newValue > oldValue, !canLeaveForward(step: oldValue) else { return }
+                        stepGateBounce.toggle()
+                        withAnimation(AnimationPreset.smooth) {
+                            currentStep = oldValue
+                        }
+                    }
+                    // Selection tick only on a successful forward move; the
+                    // bounce-back path plays the error haptic alone so the
+                    // two never stack.
+                    .sensoryFeedback(.selection, trigger: currentStep) { old, new in
+                        new > old && canLeaveForward(step: old)
+                    }
+                    .sensoryFeedback(.error, trigger: stepGateBounce)
 
                     // Bottom dock: shares the slot between the wizard's nav
                     // buttons and the red drop-to-delete zone. Sharing the
@@ -60,14 +87,30 @@ struct ProjectCreationWizardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(action: onCancel) {
+                    Button {
+                        // Closing an empty wizard is harmless; closing one
+                        // with imported photos throws work away, so confirm.
+                        if hasSelectedPhotos {
+                            isConfirmingDiscard = true
+                        } else {
+                            onCancel()
+                        }
+                    } label: {
                         Image(systemName: "xmark")
                             .foregroundStyle(Color.starWhite)
                     }
                     .buttonStyle(.glass)
-                    .accessibilityLabel(L10n.Common.done)
+                    .accessibilityLabel(L10n.Common.close)
                     .accessibilityIdentifier("wizard.cancel")
                 }
+            }
+            .confirmationDialog(
+                L10n.Wizard.discardTitle,
+                isPresented: $isConfirmingDiscard,
+                titleVisibility: .visible
+            ) {
+                Button(L10n.Wizard.discardConfirm, role: .destructive, action: onCancel)
+                Button(L10n.Wizard.keepEditing, role: .cancel) {}
             }
             .sheet(item: $activeExplainer) { kind in
                 FrameExplainerSheet(kind: kind)
@@ -155,7 +198,8 @@ struct ProjectCreationWizardView: View {
             .frame(maxWidth: .infinity, minHeight: 78, alignment: .leading)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .sensoryFeedback(.selection, trigger: isSelected) { _, new in new }
         .accessibilityLabel(mode.title)
         .accessibilityValue(modeHint(for: mode))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -458,13 +502,22 @@ struct ProjectCreationWizardView: View {
                 .disabled(!canAdvanceFromCurrentStep)
             } else {
                 Button {
+                    guard !isCreating else { return }
+                    isCreating = true
                     let frames = collectFrameGroups()
                     Task {
                         await onCreate(selectedMode, frames)
+                        isCreating = false
                     }
                 } label: {
                     HStack {
-                        Image(systemName: "sparkles")
+                        if isCreating {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.starWhite)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
                         Text(L10n.Wizard.startStacking)
                     }
                     .font(.stakkaCaption)
@@ -475,7 +528,8 @@ struct ProjectCreationWizardView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .tint(canCreate ? Color.appAccent : Color.textMuted)
-                .disabled(!canCreate)
+                .disabled(!canCreate || isCreating)
+                .sensoryFeedback(.impact(weight: .medium), trigger: isCreating) { _, new in new }
             }
         }
     }
@@ -486,10 +540,19 @@ struct ProjectCreationWizardView: View {
         lightItems.count >= 2
     }
 
+    private var hasSelectedPhotos: Bool {
+        !lightItems.isEmpty || !darkItems.isEmpty || !flatItems.isEmpty
+            || !darkFlatItems.isEmpty || !biasItems.isEmpty
+    }
+
     /// Only the Light step enforces a minimum count. All other optional steps
     /// let the user move forward freely.
     private var canAdvanceFromCurrentStep: Bool {
-        switch currentStep {
+        canLeaveForward(step: currentStep)
+    }
+
+    private func canLeaveForward(step: Int) -> Bool {
+        switch step {
         case 1: return lightItems.count >= 2
         default: return true
         }

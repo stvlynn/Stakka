@@ -18,6 +18,8 @@
 "gallery.empty" = "Your finished photos will appear here";
 "gallery.empty.hint" = "Tap the button below to create your first stacking project";
 "gallery.create" = "New Project";
+"gallery.delete.title" = "Delete “%@”?";
+"gallery.delete.message" = "This removes the project and its stacked result. This can't be undone.";
 
 "wizard.step.mode" = "Stacking Mode";
 "wizard.step.mode.explanation" = "Choose how your photos will be combined. If you're unsure, \"Average\" is a great starting point: it reduces noise and brings out faint detail.";
@@ -28,6 +30,9 @@
 "wizard.next" = "Next";
 "wizard.back" = "Back";
 "wizard.start" = "Start Stacking";
+"wizard.discard.title" = "Discard this project?";
+"wizard.discard.confirm" = "Discard";
+"wizard.discard.keepEditing" = "Keep Editing";
 "wizard.step.indicator" = "Step %@ of %@";
 "wizard.frames.required" = "At least 2 Light frames are needed to stack";
 "wizard.mode.average.hint" = "Best for most situations. Reduces noise by averaging pixel values across all frames.";

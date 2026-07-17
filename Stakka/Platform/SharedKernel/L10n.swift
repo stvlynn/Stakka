@@ -38,6 +38,15 @@ enum L10n {
             L10n.text("gallery.empty.hint", default: "Tap the button below to create your first stacking project")
         }
         static var createProject: String { L10n.text("gallery.create", default: "New Project") }
+        static func deleteConfirmTitle(title: String) -> String {
+            L10n.format("gallery.delete.title", default: "Delete “%@”?", title)
+        }
+        static var deleteConfirmMessage: String {
+            L10n.text(
+                "gallery.delete.message",
+                default: "This removes the project and its stacked result. This can't be undone."
+            )
+        }
     }
 
     enum Wizard {
@@ -138,6 +147,15 @@ enum L10n {
         static var next: String { L10n.text("wizard.next", default: "Next") }
         static var back: String { L10n.text("wizard.back", default: "Back") }
         static var startStacking: String { L10n.text("wizard.start", default: "Start Stacking") }
+        static var discardTitle: String {
+            L10n.text("wizard.discard.title", default: "Discard this project?")
+        }
+        static var discardConfirm: String {
+            L10n.text("wizard.discard.confirm", default: "Discard")
+        }
+        static var keepEditing: String {
+            L10n.text("wizard.discard.keepEditing", default: "Keep Editing")
+        }
         static func stepIndicator(current: Int, total: Int) -> String {
             L10n.format("wizard.step.indicator", default: "Step %@ of %@", String(current), String(total))
         }

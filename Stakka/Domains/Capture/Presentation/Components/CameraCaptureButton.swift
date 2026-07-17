@@ -38,10 +38,15 @@ struct CameraCaptureButton: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .scaleEffect(viewModel.isCapturing ? 0.92 : 1.0)
         .animation(AnimationPreset.springBouncy, value: viewModel.isCapturing)
-        .sensoryFeedback(.selection, trigger: viewModel.isCapturing)
+        // Starting a sequence is the app's most consequential action — a
+        // solid thump. Stopping plays success: the frames are safely handed
+        // off to the recent project.
+        .sensoryFeedback(trigger: viewModel.isCapturing) { _, isCapturing in
+            isCapturing ? .impact(weight: .heavy) : .success
+        }
         .accessibilityLabel(viewModel.isCapturing ? L10n.Accessibility.stopCapture : L10n.Accessibility.startCapture)
         .accessibilityValue(
             viewModel.isCapturing

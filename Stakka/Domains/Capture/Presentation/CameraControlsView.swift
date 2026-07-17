@@ -165,8 +165,9 @@ private struct AstroModeCardView: View {
             .scaleEffect(isSelected ? 1 : 0.94)
             .animation(AnimationPreset.spring, value: isSelected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .disabled(isDisabled)
+        .sensoryFeedback(.selection, trigger: isSelected) { _, new in new }
         .accessibilityLabel(L10n.Accessibility.selectAstroMode(mode.localizedTitle))
         .accessibilityValue(mode.localizedHint)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

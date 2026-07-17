@@ -36,5 +36,6 @@ struct ContentView: View {
         .tint(.appAccent)
         .background(Color.spaceBackground.ignoresSafeArea())
         .preferredColorScheme(.dark)
+        .sensoryFeedback(.selection, trigger: selectedTab)
     }
 }

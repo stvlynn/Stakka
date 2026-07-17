@@ -18,6 +18,8 @@
 "gallery.empty" = "完成的照片会显示在这里";
 "gallery.empty.hint" = "点击下方按钮创建第一个堆栈工程";
 "gallery.create" = "新建工程";
+"gallery.delete.title" = "删除“%@”？";
+"gallery.delete.message" = "将删除该工程及其堆栈结果，此操作无法撤销。";
 
 "wizard.step.mode" = "堆栈模式";
 "wizard.step.mode.explanation" = "选择照片的合成方式。不确定时可先用“平均”，它能降低噪声并带出暗弱细节。";
@@ -28,6 +30,9 @@
 "wizard.next" = "下一步";
 "wizard.back" = "上一步";
 "wizard.start" = "开始堆栈";
+"wizard.discard.title" = "放弃这个工程？";
+"wizard.discard.confirm" = "放弃";
+"wizard.discard.keepEditing" = "继续编辑";
 "wizard.step.indicator" = "第 %@ 步，共 %@ 步";
 "wizard.frames.required" = "至少需要 2 张亮场帧才能堆栈";
 "wizard.mode.average.hint" = "适合大多数情况，通过平均各帧像素值降低噪声。";

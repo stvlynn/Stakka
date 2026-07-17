@@ -20,7 +20,22 @@ struct CometAnnotationReviewView: View {
                     GlassEffectContainer(spacing: Spacing.md) {
                         VStack(spacing: Spacing.md) {
                             header(for: currentFrame)
-                            annotationCanvas(for: currentFrame)
+
+                            // Swipeable pages, one canvas per frame. Paging
+                            // matches the Photos-style mental model (swipe
+                            // between frames) and gives each frame its own
+                            // zoom/pan state, so a close-up on frame 3
+                            // doesn't leak onto frame 4.
+                            TabView(selection: $currentIndex) {
+                                ForEach(Array(frames.enumerated()), id: \.element.id) { index, frame in
+                                    annotationCanvas(for: frame)
+                                        .tag(index)
+                                }
+                            }
+                            .tabViewStyle(.page(indexDisplayMode: .never))
+                            .animation(AnimationPreset.smooth, value: currentIndex)
+                            .sensoryFeedback(.selection, trigger: currentIndex)
+
                             navigationControls
                         }
                     }
@@ -123,7 +138,9 @@ struct CometAnnotationReviewView: View {
     private var navigationControls: some View {
         HStack(spacing: Spacing.sm) {
             Button {
-                currentIndex = max(0, currentIndex - 1)
+                withAnimation(AnimationPreset.smooth) {
+                    currentIndex = max(0, currentIndex - 1)
+                }
             } label: {
                 controlLabel(L10n.Library.previousFrame, symbol: "chevron.left")
             }
@@ -131,7 +148,9 @@ struct CometAnnotationReviewView: View {
             .disabled(currentIndex == 0)
 
             Button {
-                currentIndex = min(frames.count - 1, currentIndex + 1)
+                withAnimation(AnimationPreset.smooth) {
+                    currentIndex = min(frames.count - 1, currentIndex + 1)
+                }
             } label: {
                 controlLabel(L10n.Library.nextFrame, symbol: "chevron.right")
             }
@@ -175,6 +194,9 @@ private struct CometAnnotationCanvas: View {
     @State private var panOffset: CGSize = .zero
     @State private var lastPanOffset: CGSize = .zero
     @State private var lastZoomScale: CGFloat = 1
+    /// Toggled whenever the user places a comet point so the tap lands with
+    /// a light impact — confirmation for an action with a subtle visual.
+    @State private var pointFeedback = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -199,6 +221,9 @@ private struct CometAnnotationCanvas: View {
                 }
             }
             .contentShape(Rectangle())
+            // Panning only engages while zoomed in. At 1× a horizontal drag
+            // must fall through to the surrounding TabView so the user can
+            // swipe between frames.
             .gesture(
                 DragGesture()
                     .onChanged { value in
@@ -209,7 +234,8 @@ private struct CometAnnotationCanvas: View {
                     }
                     .onEnded { _ in
                         lastPanOffset = panOffset
-                    }
+                    },
+                including: zoomScale > 1 ? .all : .subviews
             )
             .simultaneousGesture(
                 MagnificationGesture()
@@ -224,9 +250,11 @@ private struct CometAnnotationCanvas: View {
                 SpatialTapGesture()
                     .onEnded { value in
                         guard let point = imagePoint(from: value.location, in: displayRect) else { return }
+                        pointFeedback.toggle()
                         onSetPoint(point)
                     }
             )
+            .sensoryFeedback(.impact(weight: .light), trigger: pointFeedback)
         }
     }
 

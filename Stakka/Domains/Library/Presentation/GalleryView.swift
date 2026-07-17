@@ -5,6 +5,9 @@ struct GalleryView: View {
     @State private var isPresentingWizard = false
     @State private var navigateToProjectID: UUID?
     @State private var previewSummary: StackProjectSummary?
+    /// Project pending deletion; drives the destructive confirmation dialog
+    /// so a long-press delete can never remove a stack by accident.
+    @State private var deleteCandidate: StackProjectSummary?
 
     init(viewModel: LibraryStackingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -67,6 +70,23 @@ struct GalleryView: View {
                     },
                     onDismiss: { previewSummary = nil }
                 )
+            }
+            .confirmationDialog(
+                L10n.Gallery.deleteConfirmTitle(title: deleteCandidate?.title ?? ""),
+                isPresented: Binding(
+                    get: { deleteCandidate != nil },
+                    set: { if !$0 { deleteCandidate = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button(L10n.Common.delete, role: .destructive) {
+                    if let candidate = deleteCandidate {
+                        viewModel.deleteProject(id: candidate.id)
+                    }
+                    deleteCandidate = nil
+                }
+            } message: {
+                Text(L10n.Gallery.deleteConfirmMessage)
             }
         }
     }
@@ -163,7 +183,31 @@ struct GalleryView: View {
             .padding(Spacing.sm)
             .liquidGlassCard(cornerRadius: CornerRadius.lg, isInteractive: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        // Long-press management actions — the standard iOS pattern for grid
+        // tiles (Photos, Files). This is also the only entry point for
+        // deleting or duplicating a project since the browser was removed.
+        .contextMenu {
+            Button {
+                navigateToProjectID = summary.id
+            } label: {
+                Label(L10n.Library.openProject, systemImage: "folder")
+            }
+
+            Button {
+                viewModel.duplicateProject(id: summary.id)
+            } label: {
+                Label(L10n.Common.duplicate, systemImage: "plus.square.on.square")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                deleteCandidate = summary
+            } label: {
+                Label(L10n.Common.delete, systemImage: "trash")
+            }
+        }
     }
 
     private var createButton: some View {
@@ -176,7 +220,8 @@ struct GalleryView: View {
                 .frame(width: 56, height: 56)
                 .liquidGlass(in: Circle(), tint: .appAccent, isInteractive: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .sensoryFeedback(.impact(weight: .light), trigger: isPresentingWizard) { _, new in new }
         .accessibilityLabel(L10n.Gallery.createProject)
         .accessibilityIdentifier("gallery.fab.create")
     }

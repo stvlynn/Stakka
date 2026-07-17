@@ -370,6 +370,29 @@ extension View {
     }
 }
 
+// MARK: - Pressable Button Style
+//
+// Every pressable surface should visibly acknowledge the touch. A subtle
+// scale-down on press (0.96) with a fast ease-out makes the UI feel like it
+// is listening; anything styled `.plain` gets no feedback at all, so cards,
+// tiles, and floating buttons should use this style instead.
+struct PressableButtonStyle: ButtonStyle {
+    var pressedScale: CGFloat = 0.96
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? pressedScale : 1.0)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .animation(AnimationPreset.microInteraction, value: configuration.isPressed)
+    }
+}
+
+extension ButtonStyle where Self == PressableButtonStyle {
+    /// Scale-on-press feedback for buttons whose label draws its own
+    /// surface (glass cards, gallery tiles, floating action buttons).
+    static var pressable: PressableButtonStyle { PressableButtonStyle() }
+}
+
 // MARK: - Breathing Glow Effect
 struct BreathingGlowModifier: ViewModifier {
     let color: Color

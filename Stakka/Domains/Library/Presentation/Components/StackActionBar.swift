@@ -54,6 +54,18 @@ struct StackActionBar: View {
         }
         .animation(AnimationPreset.smooth, value: progress)
         .animation(AnimationPreset.smooth, value: errorMessage)
+        // Pipeline milestones are felt as well as seen: a thump when work
+        // kicks off, success when the pipeline returns to idle cleanly, and
+        // the system error buzz when a failure toast appears.
+        .sensoryFeedback(.impact(weight: .medium), trigger: phase) { old, new in
+            old == .idle && new != .idle
+        }
+        .sensoryFeedback(.success, trigger: phase) { old, new in
+            old != .idle && new == .idle && errorMessage == nil
+        }
+        .sensoryFeedback(.error, trigger: errorMessage) { _, new in
+            new != nil
+        }
     }
 
     // MARK: - Primary CTA

@@ -15,6 +15,7 @@ struct AdvancedControlsMenu: View {
 
             menuCard
         }
+        .sensoryFeedback(.selection, trigger: viewModel.activeInlineControl)
     }
 
     // MARK: Inline wheel
@@ -115,17 +116,22 @@ struct AdvancedControlsMenu: View {
         .gesture(
             DragGesture()
                 .onEnded { value in
-                    if value.translation.height < -50 {
+                    // A quick flick should register even before travelling
+                    // 50pt, so the projected end position (which folds in
+                    // release velocity) drives the decision.
+                    let projected = value.predictedEndTranslation.height
+                    if projected < -50 {
                         withAnimation(AnimationPreset.springBouncy) {
                             isExpanded = true
                         }
-                    } else if value.translation.height > 50 {
+                    } else if projected > 50 {
                         withAnimation(AnimationPreset.springBouncy) {
                             isExpanded = false
                         }
                     }
                 }
         )
+        .sensoryFeedback(.impact(weight: .light), trigger: isExpanded)
     }
 
     private var dragIndicator: some View {
@@ -235,7 +241,7 @@ struct AdvancedControlsMenu: View {
             .scaleEffect(isActive ? 1.05 : 1.0)
             .animation(AnimationPreset.spring, value: isActive)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .accessibilityValue(value)
     }
 
@@ -277,7 +283,7 @@ struct AdvancedControlsMenu: View {
             )
             .animation(AnimationPreset.spring, value: isActive)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
     }
 
 }
